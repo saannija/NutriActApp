@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/login_bg"
+    android:background="@drawable/background"
     android:gravity="center"
     android:padding="16dp"
     tools:context=".MainActivity">
@@ -17,9 +17,10 @@
         tools:ignore="UselessParent">
 
         <ImageView
+            android:id="@+id/logoIcon"
             android:layout_width="130dp"
             android:layout_height="130dp"
-            android:src="@drawable/icon_account_circle" />
+            android:src="@drawable/logo" />
 
         <EditText
             android:id="@+id/email_input"

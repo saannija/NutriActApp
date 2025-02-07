@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/login_bg"
+    android:background="@drawable/background"
     android:gravity="center"
     android:padding="16dp"
     tools:context=".StartActivity">
@@ -17,16 +17,17 @@
         tools:ignore="UselessParent">
 
         <ImageView
+            android:id="@+id/logoIcon"
             android:layout_width="130dp"
             android:layout_height="130dp"
-            android:src="@drawable/icon_account_circle" />
+            android:src="@drawable/logo" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Food Tracker"
+            android:text="NutriAct"
             android:textColor="@color/white"
-            android:textSize="30sp"
+            android:textSize="45sp"
             android:textStyle="bold" />
 
         <com.google.android.material.button.MaterialButton

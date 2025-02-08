@@ -33,12 +33,12 @@ class HomeActivity : AppCompatActivity() {
                     Toast.makeText(this, "Search", Toast.LENGTH_SHORT).show()
                     true
                 }
-                R.id.nav_add -> {
-                    Toast.makeText(this, "Add", Toast.LENGTH_SHORT).show()
-                    true
-                }
                 R.id.nav_fridge -> {
                     Toast.makeText(this, "Fridge", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.nav_add -> {
+                    Toast.makeText(this, "Add", Toast.LENGTH_SHORT).show()
                     true
                 }
                 else -> false

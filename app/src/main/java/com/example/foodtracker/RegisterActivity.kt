@@ -9,9 +9,14 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.semantics.text
 import androidx.core.content.ContextCompat
-
-//import androidx.compose.ui.semantics.text
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 class RegisterActivity : AppCompatActivity() {
 
@@ -21,10 +26,17 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var registerBtn: Button
     private lateinit var imageView: ImageView
     private lateinit var loginBtn: TextView
+    private lateinit var auth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
+
+        // Initialize Firebase Auth
+        auth = Firebase.auth
+        // Initialize Firestore
+        db = Firebase.firestore
 
         emailInput = findViewById(R.id.register_email_input)
         passwordInput = findViewById(R.id.register_password_input)
@@ -41,15 +53,39 @@ class RegisterActivity : AppCompatActivity() {
             val password = passwordInput.text.toString()
             val confirmPassword = confirmPasswordInput.text.toString()
 
-            // Basic registration check
             if (password == confirmPassword) {
-                // Registration successful
-                Toast.makeText(this, "Registration successful!", Toast.LENGTH_SHORT).show()
-                // Navigate to the login screen or the main app screen
-                finish() // Go back to the previous activity
+                // Firebase Authentication registration
+                auth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(this) { task ->
+                        if (task.isSuccessful) {
+                            // Registration success
+                            Toast.makeText(this, "Registration successful.", Toast.LENGTH_SHORT).show()
+                            // Get the current user's UID
+                            val userId = auth.currentUser!!.uid
+                            // Add user data to Firestore
+                            val user = hashMapOf(
+                                "userId" to userId,
+                                "email" to email,
+                                "createdAt" to Timestamp.now()
+                            )
+                            db.collection("users")
+                                .document(userId)
+                                .set(user)
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "User data added to Firestore.", Toast.LENGTH_SHORT).show()
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(this, "Error adding user data to Firestore.", Toast.LENGTH_SHORT).show()
+                                }
+                            startActivity(Intent(this, HomeActivity::class.java))
+                        } else {
+                            // If registration fails
+                            Toast.makeText(this, "Registration failed.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
             } else {
-                // Registration failed
-                Toast.makeText(this, "Passwords do not match!", Toast.LENGTH_SHORT).show()
+                // Passwords do not match
+                Toast.makeText(this, "Passwords do not match.", Toast.LENGTH_SHORT).show()
             }
         }
 

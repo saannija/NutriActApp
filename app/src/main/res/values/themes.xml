@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Material Components Theme -->
-    <style name="Theme.FoodTracker" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="colorPrimary" type="color">@color/green</item>
-    </style>
+<!--    <style name="Theme.FoodTracker" parent="Theme.MaterialComponents.Light.NoActionBar">-->
+<!--        <item name="colorPrimary" type="color">@color/green</item>-->
+<!--    </style>-->
     <!-- Material3 Theme (Alternative) -->
-    <!-- <style name="Theme.FoodTracker" parent="Theme.Material3.Light.NoActionBar" /> -->
+    <style name="Theme.FoodTracker" parent="Theme.Material3.Light.NoActionBar" >
+        <item name="colorPrimary" type="color">@color/green</item>
+        <item name="android:itemBackground">@color/bottom_nav_item_bg</item>
+    </style>
 
-<!--    <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>-->
+    <!-- Toolbar Theme -->
+    <style name="ToolbarTheme" parent="ThemeOverlay.AppCompat.ActionBar">
+        <item name="android:textColorPrimary">@color/white</item>
+    </style>
+
+    <!-- <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>-->
     <style name="LoginButtonStyle" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/white</item>
     </style>

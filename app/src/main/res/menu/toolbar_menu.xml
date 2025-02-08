@@ -5,14 +5,14 @@
     <item
         android:id="@+id/action_notifications"
         android:icon="@drawable/icon_notifications"
-        android:textColor="@color/white"
+        android:tint="@color/white"
         android:title="Notifications"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/action_profile"
-        android:icon="@drawable/icon_account_circle"
+        android:icon="@drawable/icon_user"
         android:title="Profile"
-        android:textColor="@color/white"
-        app:showAsAction="ifRoom" />
+        android:tint="@color/white"
+        app:showAsAction="ifRoom"/>
 </menu>

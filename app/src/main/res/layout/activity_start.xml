@@ -40,7 +40,7 @@
             android:textSize="20sp"
             app:backgroundTint="@color/white"
             app:cornerRadius="10dp"
-            app:rippleColor="@color/dark_green" />
+            app:rippleColor="@color/green" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/start_register_btn"
@@ -52,7 +52,7 @@
             android:textSize="20sp"
             app:backgroundTint="@color/white"
             app:cornerRadius="10dp"
-            app:rippleColor="@color/dark_green" />
+            app:rippleColor="@color/green" />
 
     </LinearLayout>
 

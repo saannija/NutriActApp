@@ -1,6 +1,9 @@
 [versions]
 agp = "8.8.0"
+barcodeScanning = "17.2.0"
+cameraCore = "1.4.0"
 firebaseBom = "33.9.0"
+guava = "33.0.0-jre"
 kotlin = "2.0.0"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -16,8 +19,14 @@ firebaseFirestore = "25.1.2"
 firebaseAuth = "23.2.0"
 
 [libraries]
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraCore" }
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraCore" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraCore" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraCore" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "barcodeScanning" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

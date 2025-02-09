@@ -3,9 +3,9 @@ package com.example.foodtracker
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class HomeActivity : AppCompatActivity() {
@@ -26,24 +26,35 @@ class HomeActivity : AppCompatActivity() {
         bottomNavigationView.setOnItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_home -> {
-                    Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show()
+                    loadFragment(HomeFragment())
                     true
                 }
                 R.id.nav_search -> {
-                    Toast.makeText(this, "Search", Toast.LENGTH_SHORT).show()
+                    loadFragment(SearchFragment())
                     true
                 }
                 R.id.nav_fridge -> {
-                    Toast.makeText(this, "Fridge", Toast.LENGTH_SHORT).show()
+                    loadFragment(InventoryFragment())
                     true
                 }
                 R.id.nav_add -> {
-                    Toast.makeText(this, "Add", Toast.LENGTH_SHORT).show()
+                    loadFragment(AddFragment())
                     true
                 }
                 else -> false
             }
         }
+
+        // Load the HomeFragment initially
+        loadFragment(HomeFragment())
+    }
+
+    // Helper function to load fragments
+    private fun loadFragment(fragment: Fragment) {
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.fragment_container, fragment)
+        transaction.addToBackStack(null) // Optional: Add to back stack
+        transaction.commit()
     }
 
     // Inflate the menu for the toolbar
@@ -56,11 +67,11 @@ class HomeActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_notifications -> {
-                Toast.makeText(this, "Notifications", Toast.LENGTH_SHORT).show()
+                // Handle notifications click
                 true
             }
             R.id.action_profile -> {
-                Toast.makeText(this, "Profile", Toast.LENGTH_SHORT).show()
+                // Handle profile click
                 true
             }
             else -> super.onOptionsItemSelected(item)

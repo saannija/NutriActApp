@@ -6,4 +6,21 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_barcode_scanner">BarcodeScannerActivity</string>
+
+    <string-array name="product_categories">
+        <item>Fruits</item>
+        <item>Vegetables</item>
+        <item>Dairy</item>
+        <item>Meat</item>
+        <item>Grains</item>
+        <item>Other</item>
+    </string-array>
+
+    <string-array name="product_types">
+        <item>Fresh</item>
+        <item>Frozen</item>
+        <item>Canned</item>
+        <item>Dried</item>
+        <item>Other</item>
+    </string-array>
 </resources>

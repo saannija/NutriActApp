@@ -71,7 +71,7 @@ class HomeActivity : AppCompatActivity() {
                 true
             }
             R.id.action_profile -> {
-                // Handle profile click
+                loadFragment(ProfileFragment())
                 true
             }
             else -> super.onOptionsItemSelected(item)

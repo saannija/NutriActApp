@@ -74,7 +74,7 @@
             android:layout_marginTop="16dp"
             android:background="@drawable/rounded_corner"
             app:backgroundTint="@color/white"
-            android:text="Register"
+            android:text="Sign up"
             android:textColor="@color/green"
             android:textSize="20sp"
             app:cornerRadius="10dp"

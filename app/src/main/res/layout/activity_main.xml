@@ -101,7 +101,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="New User? Register"
+            android:text="New User? Sign up"
             android:textColor="@color/white"
             android:textSize="16sp" />
 

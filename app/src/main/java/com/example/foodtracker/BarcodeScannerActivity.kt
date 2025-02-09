@@ -30,6 +30,8 @@ class BarcodeScannerActivity : AppCompatActivity() {
     private lateinit var previewView: PreviewView
     private lateinit var btnBack: Button
 
+    private val CAMERA_PERMISSION_REQUEST_CODE = 100
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_barcode_scanning)
@@ -38,11 +40,11 @@ class BarcodeScannerActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
 
         // Request camera permissions
-        if (allPermissionsGranted()) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera()
         } else {
             ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+                this, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE
             )
         }
 
@@ -95,12 +97,6 @@ class BarcodeScannerActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(
-            baseContext, it
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
@@ -112,13 +108,13 @@ class BarcodeScannerActivity : AppCompatActivity() {
         IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startCamera()
             } else {
                 Toast.makeText(
                     this,
-                    "Permissions not granted by the user.",
+                    "Camera permission not granted.",
                     Toast.LENGTH_SHORT
                 ).show()
                 finish()
@@ -146,14 +142,25 @@ class BarcodeScannerActivity : AppCompatActivity() {
                                             "Barcode Scanned: $barcodeValue",
                                             Toast.LENGTH_SHORT
                                         ).show()
-                                        finish() // Close the activity after scanning
+                                        finish()
                                     }
+                                }
+                                // Add more cases for other barcode types if needed
+                                else -> {
+                                    Log.d(TAG, "Barcode Value: ${barcode.rawValue}")
                                 }
                             }
                         }
                     }
                     .addOnFailureListener {
                         Log.e(TAG, "Barcode scanning failed: ${it.message}")
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@BarcodeScannerActivity,
+                                "Barcode scanning failed.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                     .addOnCompleteListener {
                         imageProxy.close()
@@ -164,7 +171,5 @@ class BarcodeScannerActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "BarcodeScanning"
-        private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     }
 }

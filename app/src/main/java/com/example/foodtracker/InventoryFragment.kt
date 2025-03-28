@@ -9,12 +9,10 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.foodtracker.model.InventoryItem
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import java.util.Calendar
-import java.util.Date
+import java.util.Locale
 
 class InventoryFragment : Fragment() {
 
@@ -28,22 +26,19 @@ class InventoryFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_inventory, container, false)
 
-        // Initialize Firebase Auth and Firestore
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
-        // Find the RecyclerView
         inventoryRecyclerView = view.findViewById(R.id.inventoryRecyclerView)
         inventoryRecyclerView.layoutManager = LinearLayoutManager(context)
 
-        // Initialize the adapter
-        inventoryAdapter = InventoryAdapter(inventoryList)
+        inventoryAdapter = InventoryAdapter(inventoryList) { item -> // Pass click listener
+            editInventoryItem(item)
+        }
         inventoryRecyclerView.adapter = inventoryAdapter
 
-        // Load data from Firebase
         loadInventoryData()
 
         return view
@@ -51,7 +46,8 @@ class InventoryFragment : Fragment() {
 
     private fun loadInventoryData() {
         val userId = auth.currentUser?.uid
-        if (userId == null) {Log.w(TAG, "User not logged in.")
+        if (userId == null) {
+            Log.w(TAG, "User not logged in.")
             return
         }
 
@@ -64,7 +60,17 @@ class InventoryFragment : Fragment() {
                 for (document in documents) {
                     val productName = document.getString("productName") ?: ""
                     val expirationDate = document.getTimestamp("expirationDate")
-                    val inventoryItem = InventoryItem(productName, expirationDate)
+                    val category = document.getString("category")
+                    val iconResId = getIconForCategory(category)
+                    val documentId = document.id
+
+                    val inventoryItem = InventoryItem(
+                        productName,
+                        expirationDate,
+                        category,
+                        iconResId,
+                        documentId
+                    )
                     inventoryList.add(inventoryItem)
                 }
                 inventoryAdapter.notifyDataSetChanged()
@@ -72,6 +78,42 @@ class InventoryFragment : Fragment() {
             .addOnFailureListener { exception ->
                 Log.w(TAG, "Error getting documents: ", exception)
             }
+    }
+
+    private fun getIconForCategory(category: String?): Int {
+        return when (category?.lowercase(Locale.ENGLISH)) {
+            "vegetable", "vegetables" -> R.drawable.ic_vegetable
+            "fruit", "fruits" -> R.drawable.ic_fruit
+            "dairy", "milk", "cheese", "yogurt" -> R.drawable.ic_dairy
+            "meat", "beef", "chicken", "pork" -> R.drawable.ic_meat
+            "grain", "bread", "rice", "pasta" -> R.drawable.ic_grain
+            "canned goods", "canned" -> R.drawable.ic_canned_goods
+            "beverage", "drinks" -> R.drawable.ic_beverage
+            else -> R.drawable.ic_default
+        }
+    }
+
+    private fun editInventoryItem(item: InventoryItem) {
+        val bundle = Bundle().apply {
+            putString("documentId", item.documentId)
+            putString("productName", item.productName)
+            putString("category", item.category)
+            putLong("expirationDate", item.expirationDate?.toDate()?.time ?: 0)
+            // Add other fields as needed...
+            putBoolean("hasScannedData", true) // Indicate that we're in "edit" mode and should show manual entry
+        }
+        val addFragment = AddFragment().apply {
+            arguments = bundle
+        }
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, addFragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadInventoryData()
     }
 
     companion object {

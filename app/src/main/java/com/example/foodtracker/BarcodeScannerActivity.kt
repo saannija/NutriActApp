@@ -1,13 +1,15 @@
 package com.example.foodtracker
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -15,29 +17,35 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.android.volley.Request
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import org.json.JSONException
+import org.json.JSONObject
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import androidx.camera.core.ExperimentalGetImage
 
 class BarcodeScannerActivity : AppCompatActivity() {
 
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var barcodeScanner: BarcodeScanner
     private lateinit var previewView: PreviewView
-    private lateinit var btnBack: Button
+//    private lateinit var btnScanExpiry: Button
+    private lateinit var barcodeAnalyzer: BarcodeAnalyzer
 
     private val CAMERA_PERMISSION_REQUEST_CODE = 100
+    private val EXPIRATION_SCAN_REQUEST_CODE = 201
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_barcode_scanning)
 
         previewView = findViewById(R.id.previewView)
-        btnBack = findViewById(R.id.btnBack)
+//        btnScanExpiry = findViewById(R.id.btnScanExpiry)
 
         // Request camera permissions
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -51,9 +59,10 @@ class BarcodeScannerActivity : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
         barcodeScanner = BarcodeScanning.getClient()
 
-        btnBack.setOnClickListener {
-            finish()
-        }
+//        btnScanExpiry.setOnClickListener {
+//            val intent = Intent(this, ExpirationScannerActivity::class.java)
+//            startActivityForResult(intent, EXPIRATION_SCAN_REQUEST_CODE)
+//        }
     }
 
     private fun startCamera() {
@@ -71,11 +80,12 @@ class BarcodeScannerActivity : AppCompatActivity() {
                 }
 
             // Image analyzer
+            barcodeAnalyzer = BarcodeAnalyzer()
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also {
-                    it.setAnalyzer(cameraExecutor, BarcodeAnalyzer())
+                    it.setAnalyzer(cameraExecutor, barcodeAnalyzer)
                 }
 
             // Select back camera as a default
@@ -122,9 +132,98 @@ class BarcodeScannerActivity : AppCompatActivity() {
         }
     }
 
+    private fun fetchProductDetails(barcode: String) {
+        val apiUrl = "$OPEN_FOOD_FACTS_API_BASE_URL$barcode.json"
+
+        val request = StringRequest(
+            Request.Method.GET,
+            apiUrl,
+            { response ->
+                try {
+                    val jsonObject = JSONObject(response)
+                    if (jsonObject.has("product")) {
+                        val product = jsonObject.getJSONObject("product")
+                        val productName = product.optString("product_name", "Unknown Product")
+                        val brand = product.optString("brands", "Unknown Brand")
+                        val category = product.optString("categories", "Unknown Category")
+                        val quantity = product.optString("quantity", "1")
+                        val expirationDate = product.optString("expiration_date", "")
+
+                        // Show a confirmation dialog with Add/Cancel options
+                        showProductDialog(productName, brand, category, quantity, expirationDate)
+
+                    } else {
+                        showToast("Product Not Found")
+                        setResult(Activity.RESULT_CANCELED)
+                        finish()
+                    }
+                } catch (e: JSONException) {
+                    Log.e(TAG, "JSON Parsing Error: ${e.message}")
+                    showToast("Error Parsing Product Data")
+                    setResult(Activity.RESULT_CANCELED)
+                    finish()
+                }
+            },
+            { error ->
+                Log.e(TAG, "API Request Failed: ${error.message}")
+                showToast("Error Fetching Product")
+                setResult(Activity.RESULT_CANCELED)
+                finish()
+            }
+        )
+
+        val requestQueue = Volley.newRequestQueue(this)
+        requestQueue.add(request)
+    }
+
+    private fun showProductDialog(
+        productName: String, brand: String, category: String,
+        quantity: String, expirationDate: String
+    ) {
+        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+        builder.setTitle("Product Found")
+        builder.setMessage(
+            "Name: $productName\nBrand: $brand\nCategory: $category\nQuantity: $quantity\nExpiration Date: $expirationDate"
+        )
+
+        // "Add" button
+        builder.setPositiveButton("Add") { _, _ ->
+            val intent= Intent()
+            intent.putExtra("productName", productName)
+            intent.putExtra("brand", brand)
+            intent.putExtra("category", category)
+            intent.putExtra("quantity", quantity)
+            intent.putExtra("expirationDate", expirationDate)
+            setResult(Activity.RESULT_OK, intent)
+            finish() // Finish after setting the result
+        }
+
+        // "Cancel" button
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.dismiss()
+            setResult(Activity.RESULT_CANCELED)
+            finish()
+        }
+
+        builder.show()
+    }
+
+    private fun showToast(message: String) {
+        runOnUiThread {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     inner class BarcodeAnalyzer : ImageAnalysis.Analyzer {
+        private var scanningPaused = false
+
         @androidx.annotation.OptIn(ExperimentalGetImage::class)
         override fun analyze(imageProxy: ImageProxy) {
+            if (scanningPaused) {
+                imageProxy.close()
+                return
+            }
+
             val mediaImage = imageProxy.image
             if (mediaImage != null) {
                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
@@ -132,44 +231,56 @@ class BarcodeScannerActivity : AppCompatActivity() {
                 barcodeScanner.process(image)
                     .addOnSuccessListener { barcodes ->
                         for (barcode in barcodes) {
-                            when (barcode.valueType) {
-                                Barcode.TYPE_PRODUCT -> {
-                                    val barcodeValue = barcode.rawValue
+                            if (barcode.valueType == Barcode.TYPE_PRODUCT) {
+                                val barcodeValue = barcode.rawValue
+                                if (!barcodeValue.isNullOrEmpty()) {
                                     Log.d(TAG, "Barcode Value: $barcodeValue")
-                                    runOnUiThread {
-                                        Toast.makeText(
-                                            this@BarcodeScannerActivity,
-                                            "Barcode Scanned: $barcodeValue",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        finish()
-                                    }
-                                }
-                                // Add more cases for other barcode types if needed
-                                else -> {
-                                    Log.d(TAG, "Barcode Value: ${barcode.rawValue}")
+                                    fetchProductDetails(barcodeValue)
+                                    scanningPaused = true // Prevent scanning another product immediately
+                                    return@addOnSuccessListener
                                 }
                             }
                         }
                     }
                     .addOnFailureListener {
                         Log.e(TAG, "Barcode scanning failed: ${it.message}")
-                        runOnUiThread {
-                            Toast.makeText(
-                                this@BarcodeScannerActivity,
-                                "Barcode scanning failed.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        showToast("Barcode scanning failed")
                     }
                     .addOnCompleteListener {
                         imageProxy.close()
                     }
+            } else {
+                imageProxy.close()
+            }
+        }
+
+        fun pauseScanning() {
+            scanningPaused = true
+        }
+
+        fun resumeScanning() {
+            scanningPaused = false
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == EXPIRATION_SCAN_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK) {
+                val expirationDate = data?.getStringExtra("expirationDate")
+                if (expirationDate != null) {
+                    Toast.makeText(this, "Expiration Date: $expirationDate", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, "No expiration date found", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "Expiration scan cancelled", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     companion object {
         private const val TAG = "BarcodeScanning"
+        private const val OPEN_FOOD_FACTS_API_BASE_URL = "https://world.openfoodfacts.org/api/v0/product/"
     }
 }

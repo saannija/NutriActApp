@@ -58,7 +58,6 @@ class RegisterActivity : AppCompatActivity() {
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener(this) { task ->
                         if (task.isSuccessful) {
-                            // Registration success
                             Toast.makeText(this, "Registration successful.", Toast.LENGTH_SHORT).show()
                             // Get the current user's UID
                             val userId = auth.currentUser!!.uid
@@ -79,12 +78,10 @@ class RegisterActivity : AppCompatActivity() {
                                 }
                             startActivity(Intent(this, HomeActivity::class.java))
                         } else {
-                            // If registration fails
                             Toast.makeText(this, "Registration failed.", Toast.LENGTH_SHORT).show()
                         }
                     }
             } else {
-                // Passwords do not match
                 Toast.makeText(this, "Passwords do not match.", Toast.LENGTH_SHORT).show()
             }
         }

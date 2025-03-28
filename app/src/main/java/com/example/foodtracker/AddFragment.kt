@@ -1,5 +1,6 @@
 package com.example.foodtracker
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -16,7 +17,8 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.compose.ui.semantics.text
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.foodtracker.model.Product
@@ -32,7 +34,6 @@ class AddFragment : Fragment() {
     private lateinit var layoutAddManually: View
     private lateinit var btnScanBarcode: Button
     private lateinit var btnAddManually: Button
-    private lateinit var btnBack: Button
     private lateinit var categoryAutoCompleteTextView: AutoCompleteTextView
     private lateinit var typeAutoCompleteTextView: AutoCompleteTextView
     private lateinit var expirationDatePicker: DatePicker
@@ -51,11 +52,19 @@ class AddFragment : Fragment() {
     private var quantity: Int = 1
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
+    private lateinit var barcodeResultLauncher: ActivityResultLauncher<Intent>
+    private var hasScannedData: Boolean = false
+    private var documentId: String? = null // To store the document ID if editing
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        // Restore the state of hasScannedData if it exists
+        if (savedInstanceState != null) {
+            hasScannedData = savedInstanceState.getBoolean(KEY_HAS_SCANNED_DATA, false)
+        }
+
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_add, container, false)
 
@@ -66,7 +75,6 @@ class AddFragment : Fragment() {
         // Find the buttons in the layout
         btnScanBarcode = view.findViewById(R.id.btnScanBarcode)
         btnAddManually = view.findViewById(R.id.btnAddManually)
-        btnBack = layoutAddManually.findViewById(R.id.btnBack)
         categoryAutoCompleteTextView = layoutAddManually.findViewById(R.id.categoryAutoCompleteTextView)
         typeAutoCompleteTextView = layoutAddManually.findViewById(R.id.typeAutoCompleteTextView)
         expirationDatePicker = layoutAddManually.findViewById(R.id.expirationDatePicker)
@@ -87,7 +95,7 @@ class AddFragment : Fragment() {
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
-        // Set the icon programmatically
+        // Set the icon
         val icon = ContextCompat.getDrawable(requireContext(), R.drawable.icon_barcode)
         btnScanBarcode.setCompoundDrawablesWithIntrinsicBounds(icon, null, null, null)
         btnScanBarcode.compoundDrawablePadding =
@@ -95,19 +103,14 @@ class AddFragment : Fragment() {
 
         // Set click listeners for the buttons
         btnScanBarcode.setOnClickListener {
-            // Handle scan barcode button click
             val intent = Intent(context, BarcodeScannerActivity::class.java)
-            startActivity(intent)
+            barcodeResultLauncher.launch(intent)
         }
 
         btnAddManually.setOnClickListener {
             // Handle add manually button click
+            hasScannedData = true
             showManualEntryForm()
-        }
-
-        btnBack.setOnClickListener {
-            // Handle back button click
-            showAddOptions()
         }
 
         // Set up the AutoCompleteTextViews
@@ -120,17 +123,88 @@ class AddFragment : Fragment() {
         // Set up the quantity stepper
         setupQuantityStepper()
 
-        // Set up the add product button
+        // Check if we're editing an existing product
+        arguments?.let {
+            documentId = it.getString("documentId")
+            productNameEditText.setText(it.getString("productName"))
+            categoryAutoCompleteTextView.setText(it.getString("category"), false)
+            // Set other fields:
+            // typeAutoCompleteTextView.setText(it.getString("type"), false)
+            // Set expiration date:
+            val expirationDateMillis = it.getLong("expirationDate", 0)
+            if (expirationDateMillis > 0) {
+                val calendar = Calendar.getInstance()
+                calendar.timeInMillis = expirationDateMillis
+                expirationDatePicker.updateDate(
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+                )
+            }
+
+            btnAddProduct.text = "Update Product"
+            hasScannedData = it.getBoolean("hasScannedData", false) // Get hasScannedData from arguments
+        }
+
+        // Set up the add/update product button
         btnAddProduct.setOnClickListener {
-            addProductToFirebase()
+            if (documentId == null) {
+                addProductToFirebase()
+            } else {
+                updateProductInFirebase(documentId!!)
+            }
+        }
+
+        // Initialize the ActivityResultLauncher
+        barcodeResultLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data: Intent? = result.data
+                val productName = data?.getStringExtra("productName") ?: ""
+                val brand = data?.getStringExtra("brand") ?: ""
+                val category = data?.getStringExtra("category") ?: ""
+                val quantity = data?.getStringExtra("quantity") ?: ""
+                val expirationDate = data?.getStringExtra("expirationDate") ?: ""
+
+                // Pre-fill form
+                productNameEditText.setText(productName)
+                categoryAutoCompleteTextView.setText(category, false)
+                quantityTextView.text = quantity
+
+                if (expirationDate.isNotEmpty()) {
+                    val parts = expirationDate.split("-")
+                    if (parts.size == 3) {
+                        expirationDatePicker.updateDate(
+                            parts[0].toInt(),
+                            parts[1].toInt() - 1,
+                            parts[2].toInt()
+                        )
+                    }
+                }
+                hasScannedData = true
+                showManualEntryForm()
+            } else {
+                hasScannedData = false
+                showAddOptions()
+            }
+        }
+
+        // Show the correct layout based on hasScannedData
+        if (hasScannedData) {
+            showManualEntryForm()
+        } else {
+            showAddOptions()
         }
 
         return view
     }
 
-    override fun onResume() {
-        super.onResume()
-        showAddOptions()
+    override fun onSaveInstanceState(outState: Bundle)
+    {
+        super.onSaveInstanceState(outState)
+        // Save the state of hasScannedData
+        outState.putBoolean(KEY_HAS_SCANNED_DATA, hasScannedData)
     }
 
     private fun showManualEntryForm() {
@@ -138,7 +212,7 @@ class AddFragment : Fragment() {
         layoutAddManually.visibility = View.VISIBLE
     }
 
-    private fun showAddOptions() {
+    fun showAddOptions() {
         layoutAddOptions.visibility = View.VISIBLE
         layoutAddManually.visibility = View.GONE
     }
@@ -226,8 +300,56 @@ class AddFragment : Fragment() {
                 clearFields()
                 showAddOptions()
             }
-            .addOnFailureListener { e ->Log.w(TAG, "Error adding document", e)
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
                 Toast.makeText(context, "Error adding product.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun updateProductInFirebase(documentId: String) {
+        // Get the current user's ID
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            Toast.makeText(context, "User not logged in.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        // Get the data from the input fields
+        val productName = productNameEditText.text.toString()
+        val category = categoryAutoCompleteTextView.text.toString()
+        val type = typeAutoCompleteTextView.text.toString()
+        val expirationDate = getExpirationDate()
+        val storageStatus = getStorageStatus()
+        val unit = unitEditText.text.toString()
+        val totalAmount = totalAmountEditText.text.toString().toIntOrNull() ?: 0
+        val notes = notesEditText.text.toString()
+        val allergenAlert = allergenAlertCheckBox.isChecked
+        // Create a Product object
+        val product = Product(
+            userId = userId,
+            productName = productName,
+            category = category,
+            type = type,
+            expirationDate = expirationDate,
+            storageStatus = storageStatus,
+            quantity = quantity,
+            unit = unit,
+            totalAmount = totalAmount,
+            notes = notes,
+            allergenAlert = allergenAlert
+        )
+        // Update the product in Firestore
+        db.collection("products")
+            .document(documentId)
+            .set(product)
+            .addOnSuccessListener {
+                Log.d(TAG, "DocumentSnapshot updated successfully")
+                Toast.makeText(context, "Product updated successfully.", Toast.LENGTH_SHORT).show()
+                clearFields()
+                parentFragmentManager.popBackStack()
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error updating document", e)
+                Toast.makeText(context, "Error updating product.", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -265,9 +387,17 @@ class AddFragment : Fragment() {
         totalAmountEditText.text?.clear()
         notesEditText.text?.clear()
         allergenAlertCheckBox.isChecked = false
+        hasScannedData = false
+        documentId = null // Reset documentId when clearing fields
+    }
+
+    fun isEditing(): Boolean {
+        return documentId != null
     }
 
     companion object {
         private const val TAG = "AddFragment"
+        private const val KEY_HAS_SCANNED_DATA = "hasScannedData"
+        private const val SCAN_REQUEST_CODE = 200
     }
 }

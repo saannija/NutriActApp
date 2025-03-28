@@ -3,6 +3,7 @@ package com.example.foodtracker
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
@@ -47,13 +48,33 @@ class HomeActivity : AppCompatActivity() {
 
         // Load the HomeFragment initially
         loadFragment(HomeFragment())
+
+        // Set up the OnBackPressedCallback
+        val onBackPressedCallback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val currentFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+                if (currentFragment is AddFragment) {
+                    if (currentFragment.isEditing()) {
+                        // If editing, navigate back to InventoryFragment
+                        supportFragmentManager.popBackStack()
+                    } else {
+                        // If adding new, show the add options
+                        currentFragment.showAddOptions()
+                    }
+                } else {
+                    // For other fragments, use default back behavior (exit the app)
+                    finish()
+                }
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
     }
 
     // Helper function to load fragments
     private fun loadFragment(fragment: Fragment) {
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.fragment_container, fragment)
-        transaction.addToBackStack(null) // Optional: Add to back stack
+        // transaction.addToBackStack(null) // Removed: Do not add to back stack for bottom nav
         transaction.commit()
     }
 

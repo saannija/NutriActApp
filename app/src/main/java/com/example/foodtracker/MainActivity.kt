@@ -30,6 +30,14 @@ class MainActivity : AppCompatActivity() {
         // Initialize Firebase Auth
         auth = Firebase.auth
 
+        // Check if user is already logged in
+        if (auth.currentUser != null) {
+            // User is already logged in, go to HomeActivity
+            startActivity(Intent(this, HomeActivity::class.java))
+            finish() // Close MainActivity
+            return
+        }
+
         emailInput = findViewById(R.id.email_input)
         passwordInput = findViewById(R.id.password_input)
         loginBtn = findViewById(R.id.login_btn)
@@ -47,11 +55,10 @@ class MainActivity : AppCompatActivity() {
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
-                        // Sign in success
                         Toast.makeText(this, "Login successful.", Toast.LENGTH_SHORT).show()
                         startActivity(Intent(this, HomeActivity::class.java))
+                        finish() // Close MainActivity
                     } else {
-                        // If sign in fails
                         Toast.makeText(this, "Login failed.", Toast.LENGTH_SHORT).show()
                     }
                 }

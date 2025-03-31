@@ -1,4 +1,3 @@
-package com.example.foodtracker
 
 import android.os.Bundle
 import android.util.Log
@@ -8,8 +7,11 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.foodtracker.AddFragment
+import com.example.foodtracker.R
 import com.example.foodtracker.model.InventoryItem
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import java.util.Locale
@@ -34,9 +36,11 @@ class InventoryFragment : Fragment() {
         inventoryRecyclerView = view.findViewById(R.id.inventoryRecyclerView)
         inventoryRecyclerView.layoutManager = LinearLayoutManager(context)
 
-        inventoryAdapter = InventoryAdapter(inventoryList) { item -> // Pass click listener
-            editInventoryItem(item)
-        }
+        inventoryAdapter = InventoryAdapter(
+            inventoryList,
+            { item -> editInventoryItem(item) },
+            { item -> deleteInventoryItem(item) }
+        )
         inventoryRecyclerView.adapter = inventoryAdapter
 
         loadInventoryData()
@@ -51,33 +55,69 @@ class InventoryFragment : Fragment() {
             return
         }
 
+        val inventoryItems = mutableListOf<InventoryItem>()
+
+        // Query 1: Get items where deleted is false
+        db.collection("products")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("deleted", false)
+            .orderBy("expirationDate", Query.Direction.ASCENDING)
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    val inventoryItem = documentToInventoryItem(document)
+                    inventoryItems.add(inventoryItem)
+                }
+                // After Query 1 completes, execute Query 2
+                queryItemsWithoutDeletedField(userId, inventoryItems)
+            }
+            .addOnFailureListener { exception ->
+                Log.w(TAG, "Error getting documents (Query 1): ", exception)
+            }
+    }
+
+    private fun queryItemsWithoutDeletedField(userId: String, existingItems: MutableList<InventoryItem>) {
+        // Query 2: Get all items for the user and filter in the app
         db.collection("products")
             .whereEqualTo("userId", userId)
             .orderBy("expirationDate", Query.Direction.ASCENDING)
             .get()
             .addOnSuccessListener { documents ->
-                inventoryList.clear()
                 for (document in documents) {
-                    val productName = document.getString("productName") ?: ""
-                    val expirationDate = document.getTimestamp("expirationDate")
-                    val category = document.getString("category")
-                    val iconResId = getIconForCategory(category)
-                    val documentId = document.id
-
-                    val inventoryItem = InventoryItem(
-                        productName,
-                        expirationDate,
-                        category,
-                        iconResId,
-                        documentId
-                    )
-                    inventoryList.add(inventoryItem)
+                    if (existingItems.none { it.documentId == document.id }) {
+                        val deleted = document.getBoolean("deleted")
+                        if (deleted != true) {
+                            val inventoryItem = documentToInventoryItem(document)
+                            existingItems.add(inventoryItem)
+                        }
+                    }
                 }
+
+                inventoryList.clear()
+                inventoryList.addAll(existingItems)
                 inventoryAdapter.notifyDataSetChanged()
             }
             .addOnFailureListener { exception ->
-                Log.w(TAG, "Error getting documents: ", exception)
+                Log.w(TAG, "Error getting documents (Query 2): ", exception)
             }
+    }
+
+    private fun documentToInventoryItem(document: DocumentSnapshot): InventoryItem {
+        val productName = document.getString("productName") ?: ""
+        val expirationDate = document.getTimestamp("expirationDate")
+        val category = document.getString("category")
+        val iconResId = getIconForCategory(category)
+        val documentId = document.id
+        val deleted = document.getBoolean("deleted") ?: false
+
+        return InventoryItem(
+            productName,
+            expirationDate,
+            category,
+            iconResId,
+            documentId,
+            deleted
+        )
     }
 
     private fun getIconForCategory(category: String?): Int {
@@ -100,7 +140,7 @@ class InventoryFragment : Fragment() {
             putString("category", item.category)
             putLong("expirationDate", item.expirationDate?.toDate()?.time ?: 0)
             // Add other fields as needed...
-            putBoolean("hasScannedData", true) // Indicate that we're in "edit" mode and should show manual entry
+            putBoolean("hasScannedData", true)
         }
         val addFragment = AddFragment().apply {
             arguments = bundle
@@ -109,6 +149,19 @@ class InventoryFragment : Fragment() {
             .replace(R.id.fragment_container, addFragment)
             .addToBackStack(null)
             .commit()
+    }
+
+    private fun deleteInventoryItem(item: InventoryItem) {
+        db.collection("products")
+            .document(item.documentId)
+            .update("deleted", true)
+            .addOnSuccessListener {
+                Log.d(TAG, "DocumentSnapshot successfully soft deleted!")
+                loadInventoryData()
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error soft deleting document", e)
+            }
     }
 
     override fun onResume() {

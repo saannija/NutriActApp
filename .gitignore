@@ -51,3 +51,4 @@ google-services.json
 # Android Profiling
 *.hprof
 >>>>>>> 3aa96943bf562c7bf7e06ed06157314f165ab603
+/app/src/main/java/com/example/foodtracker/network/RecipeApiService.kt

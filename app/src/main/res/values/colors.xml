@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="black">#FF000000</color>
+    <color name="red">#CC0000FF</color>
     <color name="white">#FFFFFF</color>
     <color name="green">#74F05C</color>
     <color name="dark_green">#123106</color>
+    <color name="expired_tint">#FFCDD2</color>
+    <color name="near_expiry_tint">#FFF9C4</color>
+    <color name="default_background">#FFFFFF</color>
 </resources>

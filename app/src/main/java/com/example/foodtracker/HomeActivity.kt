@@ -1,5 +1,6 @@
 package com.example.foodtracker
 
+import InventoryFragment
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -46,23 +47,18 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
-        // Load the HomeFragment initially
         loadFragment(HomeFragment())
 
-        // Set up the OnBackPressedCallback
         val onBackPressedCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 val currentFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                 if (currentFragment is AddFragment) {
                     if (currentFragment.isEditing()) {
-                        // If editing, navigate back to InventoryFragment
                         supportFragmentManager.popBackStack()
                     } else {
-                        // If adding new, show the add options
                         currentFragment.showAddOptions()
                     }
                 } else {
-                    // For other fragments, use default back behavior (exit the app)
                     finish()
                 }
             }
@@ -74,7 +70,6 @@ class HomeActivity : AppCompatActivity() {
     private fun loadFragment(fragment: Fragment) {
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.fragment_container, fragment)
-        // transaction.addToBackStack(null) // Removed: Do not add to back stack for bottom nav
         transaction.commit()
     }
 
@@ -88,7 +83,6 @@ class HomeActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_notifications -> {
-                // Handle notifications click
                 true
             }
             R.id.action_profile -> {

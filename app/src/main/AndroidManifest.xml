@@ -49,6 +49,10 @@
             android:name=".MainActivity"
             android:exported="false"
             android:theme="@style/Theme.FoodTracker" />
+        <activity
+            android:name=".RecipeDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodTracker" />
     </application>
 
 </manifest>

@@ -8,5 +8,6 @@ data class InventoryItem(
     val expirationDate: Timestamp?,
     val category: String? = null,
     var iconResId: Int = R.drawable.ic_default,
-    val documentId: String
+    val documentId: String,
+    val deleted: Boolean = false
 )

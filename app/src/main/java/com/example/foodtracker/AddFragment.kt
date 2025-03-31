@@ -288,7 +288,8 @@ class AddFragment : Fragment() {
             unit = unit,
             totalAmount = totalAmount,
             notes = notes,
-            allergenAlert = allergenAlert
+            allergenAlert = allergenAlert,
+            deleted = false
         )
 
         // Add the product to Firestore
@@ -324,32 +325,50 @@ class AddFragment : Fragment() {
         val notes = notesEditText.text.toString()
         val allergenAlert = allergenAlertCheckBox.isChecked
         // Create a Product object
-        val product = Product(
-            userId = userId,
-            productName = productName,
-            category = category,
-            type = type,
-            expirationDate = expirationDate,
-            storageStatus = storageStatus,
-            quantity = quantity,
-            unit = unit,
-            totalAmount = totalAmount,
-            notes = notes,
-            allergenAlert = allergenAlert
-        )
-        // Update the product in Firestore
         db.collection("products")
             .document(documentId)
-            .set(product)
-            .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot updated successfully")
-                Toast.makeText(context, "Product updated successfully.", Toast.LENGTH_SHORT).show()
-                clearFields()
-                parentFragmentManager.popBackStack()
+            .get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val existingDeleted = document.getBoolean("deleted") ?: false
+
+                    val product = Product(
+                        userId = userId,
+                        productName = productName,
+                        category = category,
+                        type = type,
+                        expirationDate = expirationDate,
+                        storageStatus = storageStatus,
+                        quantity = quantity,
+                        unit = unit,
+                        totalAmount = totalAmount,
+                        notes = notes,
+                        allergenAlert = allergenAlert,
+                        deleted = existingDeleted
+                    )
+
+                    // Update the product in Firestore
+                    db.collection("products")
+                        .document(documentId)
+                        .set(product)
+                        .addOnSuccessListener {
+                            Log.d(TAG, "DocumentSnapshot updated successfully")
+                            Toast.makeText(context, "Product updated successfully.", Toast.LENGTH_SHORT).show()
+                            clearFields()
+                            parentFragmentManager.popBackStack()
+                        }
+                        .addOnFailureListener { e ->
+                            Log.w(TAG, "Error updating document", e)
+                            Toast.makeText(context, "Error updating product.", Toast.LENGTH_SHORT).show()
+                        }
+                } else {
+                    Log.w(TAG, "Error: Document not found for update")
+                    Toast.makeText(context, "Error: Product not found.", Toast.LENGTH_SHORT).show()
+                }
             }
             .addOnFailureListener { e ->
-                Log.w(TAG, "Error updating document", e)
-                Toast.makeText(context, "Error updating product.", Toast.LENGTH_SHORT).show()
+                Log.w(TAG, "Error getting document for update", e)
+                Toast.makeText(context, "Error: Could not retrieve product data.", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -388,7 +407,7 @@ class AddFragment : Fragment() {
         notesEditText.text?.clear()
         allergenAlertCheckBox.isChecked = false
         hasScannedData = false
-        documentId = null // Reset documentId when clearing fields
+        documentId = null
     }
 
     fun isEditing(): Boolean {

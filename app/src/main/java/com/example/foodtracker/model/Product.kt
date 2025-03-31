@@ -17,5 +17,6 @@ data class Product(
     val unit: String = "",
     val totalAmount: Int = 0,
     val notes: String = "",
-    val allergenAlert: Boolean = false
+    val allergenAlert: Boolean = false,
+    val deleted: Boolean = false
 )

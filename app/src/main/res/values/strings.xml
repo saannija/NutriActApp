@@ -30,8 +30,11 @@
     <string name="cuisine_format">Cuisine: %1$s</string>
     <string name="servings_format">Servings: %1$d</string>
     <string name="tags_format">Tags: %1$s</string>
-    <string name="ingredients_label"><b>Ingredients:</b><br/></string>
-    <string name="instructions_label"><b>Instructions:</b><br/></string>
+    <string name="ingredients_label">Ingredients</string>
+    <string name="instructions_label">Instructions</string>
     <string name="recipe_saved">Recipe saved!</string>
     <string name="login_to_save">Please log in to save recipes.</string>
+    <string name="recipe_already_saved">Recipe Already Saved</string>
+    <string name="save_recipe">Save Recipe</string>
+    <string name="recipe_image">Recipe Image</string>
 </resources>

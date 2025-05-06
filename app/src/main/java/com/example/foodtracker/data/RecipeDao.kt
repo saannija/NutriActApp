@@ -13,4 +13,7 @@ interface RecipeDao {
 
     @Query("SELECT * FROM saved_recipes WHERE userId = :userId")
     fun getSavedRecipesForUser(userId: String): List<SavedRecipe>
+
+    @Query("SELECT COUNT(*) FROM saved_recipes WHERE userId = :userId AND title = :title")
+    fun isRecipeSaved(userId: String, title: String): Int
 }

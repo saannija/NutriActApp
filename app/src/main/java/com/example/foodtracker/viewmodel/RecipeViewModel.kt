@@ -1,28 +1,23 @@
 package com.example.foodtracker.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import com.example.foodtracker.data.FirestoreService
 import com.example.foodtracker.model.Recipe
-import com.example.foodtracker.model.SavedRecipe
-import com.example.foodtracker.repository.RecipeRepository
 import kotlinx.coroutines.launch
 
-class RecipeViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = RecipeRepository(application)
+class RecipeViewModel : ViewModel() {
 
-    fun getRecipes(ingredients: String): LiveData<List<Recipe>> {
-        return repository.getRecipes(ingredients)
-    }
+    private val firestoreService = FirestoreService()
 
-    fun saveRecipe(recipe: SavedRecipe) {
+    private val _recipes = MutableLiveData<List<Recipe>>()
+    val recipes: LiveData<List<Recipe>> = _recipes
+
+    fun fetchRecipes() {
         viewModelScope.launch {
-            repository.saveRecipe(recipe)
+            _recipes.value = firestoreService.getAllRecipes()
         }
-    }
-
-    fun getSavedRecipesForUser(userId: String): LiveData<List<SavedRecipe>> {
-        return repository.getSavedRecipesForUser(userId)
     }
 }

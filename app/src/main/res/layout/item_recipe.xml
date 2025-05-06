@@ -33,6 +33,15 @@
             android:text="Recipe Title" />
 
         <TextView
+            android:id="@+id/recipeDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"
+            android:paddingTop="4dp"
+            android:text="Recipe Description" />
+
+        <TextView
             android:id="@+id/recipeInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -4,44 +4,66 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
+import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.example.foodtracker.viewmodel.RecipeViewModel
+import com.example.foodtracker.databinding.FragmentSearchBinding
+import com.example.foodtracker.model.Recipe
+import com.google.firebase.firestore.FirebaseFirestore
 
 class SearchFragment : Fragment() {
-    private val viewModel: RecipeViewModel by viewModels()
-    private lateinit var searchEditText: EditText
-    private lateinit var searchButton: Button
-    private lateinit var recipeRecyclerView: RecyclerView
+
+    private var _binding: FragmentSearchBinding? = null
+    private val binding get() = _binding!!
+
+    private val db = FirebaseFirestore.getInstance()
+    private val recipeList = mutableListOf<Recipe>()
     private lateinit var adapter: RecipeAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_search, container, false)
-        searchEditText = view.findViewById(R.id.searchEditText)
-        searchButton = view.findViewById(R.id.searchButton)
-        recipeRecyclerView = view.findViewById(R.id.recipeRecyclerView)
+    ): View {
+        _binding = FragmentSearchBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
-        adapter = RecipeAdapter(emptyList())
-        recipeRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recipeRecyclerView.adapter = adapter
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-        searchButton.setOnClickListener {
-            val ingredients = searchEditText.text.toString()
-            if (ingredients.isNotEmpty()) {
-                viewModel.getRecipes(ingredients).observe(viewLifecycleOwner, Observer { recipes ->
-                    adapter.updateRecipes(recipes)
-                })
-            }
+        adapter = RecipeAdapter(recipeList) { selectedRecipe ->
+            // Navigate to detail fragment with selectedRecipe
+            val fragment = RecipeDetailFragment.newInstance(selectedRecipe)
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit()
         }
 
-        return view
+        binding.recipeRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.recipeRecyclerView.adapter = adapter
+
+        loadRecipesFromFirestore()
+    }
+
+    private fun loadRecipesFromFirestore() {
+        db.collection("recipes")
+            .get()
+            .addOnSuccessListener { result ->
+                recipeList.clear()
+                for (doc in result) {
+                    val recipe = doc.toObject(Recipe::class.java)
+                    recipeList.add(recipe)
+                }
+                adapter.notifyDataSetChanged()
+            }
+            .addOnFailureListener {
+                Toast.makeText(requireContext(), "Failed to load recipes", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

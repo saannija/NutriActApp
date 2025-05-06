@@ -6,9 +6,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.foodtracker.model.SavedRecipe
 
-@Database(entities = [SavedRecipe::class], version = 2)
+@Database(entities = [SavedRecipe::class], version = 1)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun savedRecipeDao(): SavedRecipeDao
+    abstract fun recipeDao(): RecipeDao
 
     companion object {
         @Volatile
@@ -21,7 +22,6 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "nutriact_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
                     .build()
                 INSTANCE = instance
                 instance

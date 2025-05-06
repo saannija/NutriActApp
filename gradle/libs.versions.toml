@@ -8,6 +8,10 @@ cameraView = "1.4.1"
 cardview = "1.0.0"
 fragmentKtx = "1.8.6"
 glide = "4.16.0"
+googleHiltAndroid = "2.56.2"
+gson = "2.10.1"
+hiltAndroid = "2.50"
+hiltCompiler = "2.56.2"
 lifecycleViewmodelKtx = "2.6.1"
 lifecycleViewmodelKtxVersion = "2.8.4"
 materialVersion = "1.13.0-alpha06"
@@ -32,6 +36,7 @@ googleGmsGoogleServices = "4.4.2"
 mlkit-text-recognition = "16.0.0"
 firebaseFirestore = "25.1.2"
 firebaseAuth = "23.2.0"
+hilt = "2.50"
 
 [libraries]
 androidx-camera-camera2-v131 = { module = "androidx.camera:camera-camera2", version.ref = "cameraCamera2" }
@@ -51,6 +56,9 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
 material-v1130alpha06 = { module = "com.google.android.material:material", version.ref = "materialVersion" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 volley = { module = "com.android.volley:volley", version.ref = "volley" }

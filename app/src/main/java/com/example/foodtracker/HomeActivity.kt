@@ -9,7 +9,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var bottomNavigationView: BottomNavigationView
@@ -47,7 +49,10 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
-        loadFragment(HomeFragment())
+        // Load the default fragment (HomeFragment)
+        if (savedInstanceState == null) {
+            loadFragment(HomeFragment())
+        }
 
         val onBackPressedCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -58,6 +63,8 @@ class HomeActivity : AppCompatActivity() {
                     } else {
                         currentFragment.showAddOptions()
                     }
+                } else if (supportFragmentManager.backStackEntryCount > 0) {
+                    supportFragmentManager.popBackStack()
                 } else {
                     finish()
                 }
@@ -70,6 +77,10 @@ class HomeActivity : AppCompatActivity() {
     private fun loadFragment(fragment: Fragment) {
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.fragment_container, fragment)
+        // Only add to back stack if it's not the initial fragment
+        if (supportFragmentManager.findFragmentById(R.id.fragment_container) != null) {
+            transaction.addToBackStack(null)
+        }
         transaction.commit()
     }
 

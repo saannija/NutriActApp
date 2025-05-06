@@ -23,4 +23,15 @@
         <item>Dried</item>
         <item>Other</item>
     </string-array>
+
+    <string name="prep_time_format">Prep Time: %1$d minutes</string>
+    <string name="total_time_format">Total Time: %1$d minutes</string>
+    <string name="category_format">Category: %1$s</string>
+    <string name="cuisine_format">Cuisine: %1$s</string>
+    <string name="servings_format">Servings: %1$d</string>
+    <string name="tags_format">Tags: %1$s</string>
+    <string name="ingredients_label"><b>Ingredients:</b><br/></string>
+    <string name="instructions_label"><b>Instructions:</b><br/></string>
+    <string name="recipe_saved">Recipe saved!</string>
+    <string name="login_to_save">Please log in to save recipes.</string>
 </resources>

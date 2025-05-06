@@ -17,7 +17,6 @@ class HomeFragment : Fragment() {
 
         savedRecipesButton.setOnClickListener {
             val transaction = requireActivity().supportFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, SavedRecipesFragment())
             transaction.addToBackStack(null)
             transaction.commit()
         }

@@ -38,7 +38,12 @@
 
     <include
         android:id="@+id/layoutAddManually"
-        layout="@layout/layout_add_manually"
-        android:visibility="gone" />
+        layout="@layout/layout_add_manually" />
+
+    <include
+        android:id="@+id/layoutAddMasterProduct"
+        layout="@layout/layout_add_master_product"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
 </FrameLayout>

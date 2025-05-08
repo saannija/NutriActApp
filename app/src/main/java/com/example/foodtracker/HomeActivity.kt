@@ -58,10 +58,11 @@ class HomeActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 val currentFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                 if (currentFragment is AddFragment) {
-                    if (currentFragment.isEditing()) {
+                    val addFragment = currentFragment as AddFragment
+                    if (addFragment.isEditing()) {
                         supportFragmentManager.popBackStack()
                     } else {
-                        currentFragment.showAddOptions()
+                        addFragment.showAddOptions()
                     }
                 } else if (supportFragmentManager.backStackEntryCount > 0) {
                     supportFragmentManager.popBackStack()

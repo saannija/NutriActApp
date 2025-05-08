@@ -1,4 +1,4 @@
-package com.example.foodtracker.model // Make sure this matches your package name
+package com.example.foodtracker.model
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
@@ -6,6 +6,7 @@ import com.google.firebase.firestore.DocumentId
 data class Product(
     @DocumentId val id: String = "",
     val userId: String = "",
+    val barcode: String = "",
     val productName: String = "",
     val category: String = "",
     val type: String = "",
@@ -18,5 +19,6 @@ data class Product(
     val totalAmount: Int = 0,
     val notes: String = "",
     val allergenAlert: Boolean = false,
-    val deleted: Boolean = false
+    val deleted: Boolean = false,
+    val masterProductId: String? = null
 )

@@ -6,7 +6,7 @@ import com.google.firebase.firestore.DocumentId
 data class Product(
     @DocumentId val id: String = "",
     val userId: String = "",
-    val barcode: String = "",
+    val barcode: String? = null,
     val productName: String = "",
     val category: String = "",
     val type: String = "",

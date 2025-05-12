@@ -37,4 +37,13 @@
     <string name="recipe_already_saved">Recipe Already Saved</string>
     <string name="save_recipe">Save Recipe</string>
     <string name="recipe_image">Recipe Image</string>
+
+    <string-array name="product_units">
+        <item>g</item>
+        <item>kg</item>
+        <item>ml</item>
+        <item>L</item>
+        <item>pcs</item>
+        <item>Other</item>
+    </string-array>
 </resources>

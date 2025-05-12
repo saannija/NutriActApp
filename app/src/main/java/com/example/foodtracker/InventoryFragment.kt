@@ -109,6 +109,14 @@ class InventoryFragment : Fragment() {
         val iconResId = getIconForCategory(category)
         val documentId = document.id
         val deleted = document.getBoolean("deleted") ?: false
+        val type = document.getString("type")
+        val storageStatus = document.getString("storageStatus")
+        val quantity = document.getLong("quantity")?.toInt() ?: 0
+        val unit = document.getString("unit")
+        val totalAmount = document.getLong("totalAmount")?.toInt() ?: 0
+        val notes = document.getString("notes")
+        val allergenAlert = document.getBoolean("allergenAlert") ?: false
+
 
         return InventoryItem(
             productName,
@@ -116,7 +124,14 @@ class InventoryFragment : Fragment() {
             category,
             iconResId,
             documentId,
-            deleted
+            deleted,
+            type,
+            storageStatus,
+            quantity,
+            unit,
+            totalAmount,
+            notes,
+            allergenAlert,
         )
     }
 
@@ -139,8 +154,15 @@ class InventoryFragment : Fragment() {
             putString("productName", item.productName)
             putString("category", item.category)
             putLong("expirationDate", item.expirationDate?.toDate()?.time ?: 0)
-            // Add other fields as needed...
-            putBoolean("hasScannedData", true)
+            putString("type", item.type)
+            putString("storageStatus", item.storageStatus)
+            putInt("quantity", item.quantity)
+            putString("unit", item.unit)
+            putInt("totalAmount", item.totalAmount)
+            putString("notes", item.notes)
+            putBoolean("allergenAlert", item.allergenAlert)
+
+            putBoolean("hasScannedData", true) // Set this to true to show the manual entry form
         }
         val addFragment = AddFragment().apply {
             arguments = bundle

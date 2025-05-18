@@ -1,20 +1,24 @@
+package com.example.foodtracker
 
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.foodtracker.AddFragment
-import com.example.foodtracker.R
 import com.example.foodtracker.model.InventoryItem
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import java.util.Calendar
 import java.util.Locale
+import java.util.concurrent.TimeUnit
+
 
 class InventoryFragment : Fragment() {
 
@@ -23,6 +27,8 @@ class InventoryFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private val inventoryList = mutableListOf<InventoryItem>()
+
+    private val nearingExpirationThresholdDays = 3
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,7 +45,7 @@ class InventoryFragment : Fragment() {
         inventoryAdapter = InventoryAdapter(
             inventoryList,
             { item -> editInventoryItem(item) },
-            { item -> deleteInventoryItem(item) }
+            { item -> showDeleteConfirmationDialog(item)  }
         )
         inventoryRecyclerView.adapter = inventoryAdapter
 
@@ -55,7 +61,7 @@ class InventoryFragment : Fragment() {
             return
         }
 
-        val inventoryItems = mutableListOf<InventoryItem>()
+        val combinedFetchedItems = mutableListOf<InventoryItem>()
 
         // Query 1: Get items where deleted is false
         db.collection("products")
@@ -66,17 +72,45 @@ class InventoryFragment : Fragment() {
             .addOnSuccessListener { documents ->
                 for (document in documents) {
                     val inventoryItem = documentToInventoryItem(document)
-                    inventoryItems.add(inventoryItem)
+                    combinedFetchedItems.add(inventoryItem)
                 }
                 // After Query 1 completes, execute Query 2
-                queryItemsWithoutDeletedField(userId, inventoryItems)
+                queryItemsThatMightMissDeletedField(userId, combinedFetchedItems)
             }
             .addOnFailureListener { exception ->
                 Log.w(TAG, "Error getting documents (Query 1): ", exception)
             }
     }
 
-    private fun queryItemsWithoutDeletedField(userId: String, existingItems: MutableList<InventoryItem>) {
+    private fun calculateDaysRemaining(expirationTimestamp: Timestamp?): Long {
+        if (expirationTimestamp == null) {
+            return Long.MAX_VALUE
+        }
+        val expirationDate = expirationTimestamp.toDate()
+        val nowCal = Calendar.getInstance()
+        val expirationCal = Calendar.getInstance().apply { time = expirationDate }
+
+        nowCal.set(Calendar.HOUR_OF_DAY, 0); nowCal.set(Calendar.MINUTE, 0); nowCal.set(Calendar.SECOND, 0); nowCal.set(Calendar.MILLISECOND, 0)
+        expirationCal.set(Calendar.HOUR_OF_DAY, 0); expirationCal.set(Calendar.MINUTE, 0); expirationCal.set(Calendar.SECOND, 0); expirationCal.set(Calendar.MILLISECOND, 0)
+
+        val diffMillis = expirationCal.timeInMillis - nowCal.timeInMillis
+        return TimeUnit.MILLISECONDS.toDays(diffMillis)
+    }
+
+    private fun determineItemExpirationStatus(item: InventoryItem, thresholdDays: Int): ExpirationStatus {
+        if (item.expirationDate == null) {
+            return ExpirationStatus.NO_DATE
+        }
+        val daysRemaining = calculateDaysRemaining(item.expirationDate)
+
+        return when {
+            daysRemaining < 0 -> ExpirationStatus.EXPIRED
+            daysRemaining < thresholdDays -> ExpirationStatus.NEARING_EXPIRATION
+            else -> ExpirationStatus.NORMAL
+        }
+    }
+
+    private fun queryItemsThatMightMissDeletedField(userId: String, currentItems: MutableList<InventoryItem>) {
         // Query 2: Get all items for the user and filter in the app
         db.collection("products")
             .whereEqualTo("userId", userId)
@@ -84,17 +118,31 @@ class InventoryFragment : Fragment() {
             .get()
             .addOnSuccessListener { documents ->
                 for (document in documents) {
-                    if (existingItems.none { it.documentId == document.id }) {
-                        val deleted = document.getBoolean("deleted")
-                        if (deleted != true) {
+                    if (currentItems.none { it.documentId == document.id }) {
+                        val deleted = document.getBoolean("deleted") ?: false
+                        if (!deleted) {
                             val inventoryItem = documentToInventoryItem(document)
-                            existingItems.add(inventoryItem)
+                            currentItems.add(inventoryItem)
                         }
                     }
                 }
 
+                currentItems.sortWith(
+                    compareBy<InventoryItem> { item ->
+                        val status = determineItemExpirationStatus(item, nearingExpirationThresholdDays)
+                        when (status) {
+                            ExpirationStatus.EXPIRED -> 0
+                            ExpirationStatus.NEARING_EXPIRATION -> 1
+                            ExpirationStatus.NORMAL -> 2
+                            ExpirationStatus.NO_DATE -> 3
+                        }
+                    }.thenBy { item ->
+                        item.expirationDate?.toDate()?.time ?: Long.MAX_VALUE
+                    }
+                )
+
                 inventoryList.clear()
-                inventoryList.addAll(existingItems)
+                inventoryList.addAll(currentItems)
                 inventoryAdapter.notifyDataSetChanged()
             }
             .addOnFailureListener { exception ->
@@ -114,7 +162,7 @@ class InventoryFragment : Fragment() {
         val quantity = document.getLong("quantity")?.toInt() ?: 0
         val unit = document.getString("unit")
         val totalAmount = document.getLong("totalAmount")?.toInt() ?: 0
-        val notes = document.getString("notes")
+        val notes = document.getString("notes") ?: ""
         val allergenAlert = document.getBoolean("allergenAlert") ?: false
 
 
@@ -131,7 +179,7 @@ class InventoryFragment : Fragment() {
             unit,
             totalAmount,
             notes,
-            allergenAlert,
+            allergenAlert
         )
     }
 
@@ -162,7 +210,7 @@ class InventoryFragment : Fragment() {
             putString("notes", item.notes)
             putBoolean("allergenAlert", item.allergenAlert)
 
-            putBoolean("hasScannedData", true) // Set this to true to show the manual entry form
+            putBoolean("hasScannedData", true)
         }
         val addFragment = AddFragment().apply {
             arguments = bundle
@@ -173,16 +221,35 @@ class InventoryFragment : Fragment() {
             .commit()
     }
 
-    private fun deleteInventoryItem(item: InventoryItem) {
+    private fun showDeleteConfirmationDialog(item: InventoryItem) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Confirm Delete")
+            .setMessage("Do you really want to remove ${item.productName}?")
+            .setPositiveButton("Delete") { dialog, which ->
+                // User clicked "Delete", proceed with the actual deletion
+                performDeleteInventoryItem(item)
+            }
+            .setNegativeButton("Cancel", null) // User clicked "Cancel", do nothing
+            .setIcon(R.drawable.ic_delete)
+            .show()
+    }
+
+    private fun performDeleteInventoryItem(item: InventoryItem) {
         db.collection("products")
             .document(item.documentId)
             .update("deleted", true)
             .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot successfully soft deleted!")
-                loadInventoryData()
+                val itemIndex = inventoryList.indexOfFirst { it.documentId == item.documentId }
+                if (itemIndex != -1) {
+                    inventoryList.removeAt(itemIndex)
+                    inventoryAdapter.notifyItemRemoved(itemIndex)
+                    loadInventoryData()
+                } else {
+                    // If not found (shouldn't happen)
+                    loadInventoryData()
+                }
             }
             .addOnFailureListener { e ->
-                Log.w(TAG, "Error soft deleting document", e)
             }
     }
 

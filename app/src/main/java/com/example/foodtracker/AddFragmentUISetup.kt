@@ -24,6 +24,7 @@ class AddFragmentUiSetup(
         setupUnitAutoCompleteTextView()
         setupMasterCategoryAutoCompleteTextView()
         setupMasterTypeAutoCompleteTextView()
+        setupMasterUnitAutoCompleteTextView()
 
         // Set up the DatePicker
         setupDatePicker()
@@ -39,7 +40,7 @@ class AddFragmentUiSetup(
         val categories = fragment.resources.getStringArray(R.array.product_categories)
         val adapter = ArrayAdapter(
             fragment.requireContext(),
-            R.layout.dropdown_item,
+            R.layout.item_dropdown,
             categories
         )
         binding.layoutAddManually.categoryAutoCompleteTextView.setAdapter(adapter)
@@ -60,7 +61,7 @@ class AddFragmentUiSetup(
         val types = fragment.resources.getStringArray(R.array.product_types)
         val adapter = ArrayAdapter(
             fragment.requireContext(),
-            R.layout.dropdown_item,
+            R.layout.item_dropdown,
             types
         )
         binding.layoutAddManually.typeAutoCompleteTextView.setAdapter(adapter)
@@ -81,7 +82,7 @@ class AddFragmentUiSetup(
         val units = fragment.resources.getStringArray(R.array.product_units)
         val adapter = ArrayAdapter(
             fragment.requireContext(),
-            R.layout.dropdown_item,
+            R.layout.item_dropdown,
             units
         )
         binding.layoutAddManually.unitAutoCompleteTextView.setAdapter(adapter)
@@ -101,7 +102,7 @@ class AddFragmentUiSetup(
     private fun setupMasterCategoryAutoCompleteTextView() {
         val categories = fragment.resources.getStringArray(R.array.product_categories)
         val adapter = ArrayAdapter(fragment.requireContext(),
-            R.layout.dropdown_item,
+            R.layout.item_dropdown,
             categories
         )
         binding.layoutAddMasterProduct.masterCategoryAutoCompleteTextView.setAdapter(adapter)
@@ -111,10 +112,30 @@ class AddFragmentUiSetup(
         val types = fragment.resources.getStringArray(R.array.product_types)
         val adapter = ArrayAdapter(
             fragment.requireContext(),
-            R.layout.dropdown_item,
+            R.layout.item_dropdown,
             types
         )
         binding.layoutAddMasterProduct.masterTypeAutoCompleteTextView.setAdapter(adapter)
+    }
+
+    private fun setupMasterUnitAutoCompleteTextView() {
+        val units = fragment.resources.getStringArray(R.array.product_units)
+        val adapter = ArrayAdapter(
+            fragment.requireContext(),
+            R.layout.item_dropdown,
+            units
+        )
+        binding.layoutAddMasterProduct.masterUnitAutoCompleteTextView.setAdapter(adapter)
+
+        binding.layoutAddMasterProduct.masterUnitAutoCompleteTextView.setOnItemClickListener { parent, _, position, _ ->
+            val selectedUnit = parent.getItemAtPosition(position).toString()
+            if (selectedUnit.equals("Other", ignoreCase = true)) {
+                binding.layoutAddMasterProduct.otherMasterUnitInputLayout.visibility = View.VISIBLE
+            } else {
+                binding.layoutAddMasterProduct.otherMasterUnitInputLayout.visibility = View.GONE
+                binding.layoutAddMasterProduct.otherMasterUnitEditText.text?.clear()
+            }
+        }
     }
 
     private fun setupDatePicker() {

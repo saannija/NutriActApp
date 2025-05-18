@@ -8,4 +8,7 @@
     <color name="expired_tint">#FFCDD2</color>
     <color name="near_expiry_tint">#FFF9C4</color>
     <color name="default_background">#FFFFFF</color>
+    <color name="warning_text_orange">#FFA500</color>
+    <color name="warning_stroke_orange">#80FFA500</color>
+    <color name="error_stroke_red">#80FF0000</color>
 </resources>

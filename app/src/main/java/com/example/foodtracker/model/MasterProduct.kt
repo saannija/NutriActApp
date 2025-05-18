@@ -9,8 +9,9 @@ data class MasterProduct(
     val brand: String = "",
     val category: String = "",
     val type: String = "",
-    val quantity: String = "",
-    val imageUrl: String = "",
+    val quantity: Int? = null,
+    val unit: String = "",
+    val imageUrl: String? = null,
     val description: String = "",
     val ingredients: List<String> = emptyList(),
     val allergens: List<String> = emptyList()

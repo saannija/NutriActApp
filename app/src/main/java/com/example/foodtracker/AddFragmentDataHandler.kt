@@ -162,28 +162,35 @@ class AddFragmentDataHandler(
         val masterProductBrand = binding.layoutAddMasterProduct.masterProductBrandEditText.text.toString().trim()
         val masterCategory = binding.layoutAddMasterProduct.masterCategoryAutoCompleteTextView.text.toString().trim()
         val masterType = binding.layoutAddMasterProduct.masterTypeAutoCompleteTextView.text.toString().trim()
-        val masterProductQuantity = binding.layoutAddMasterProduct.masterProductQuantityEditText.text.toString().trim()
-        val masterProductImageUrl = binding.layoutAddMasterProduct.masterProductImageUrlEditText.text.toString().trim()
+
+        val masterQuantityString = binding.layoutAddMasterProduct.masterQuantityEditText.text.toString().trim()
+        val masterQuantity = masterQuantityString.toIntOrNull()
+
+        val masterUnit = if (binding.layoutAddMasterProduct.otherMasterUnitInputLayout.visibility == View.VISIBLE) {
+            binding.layoutAddMasterProduct.otherMasterUnitEditText.text.toString().trim()
+        } else {
+            binding.layoutAddMasterProduct.masterUnitAutoCompleteTextView.text.toString().trim()
+        }
+
         val masterProductDescription = binding.layoutAddMasterProduct.masterProductDescriptionEditText.text.toString().trim()
         // Convert comma-separated strings to lists
         val masterProductIngredients = binding.layoutAddMasterProduct.masterProductIngredientsEditText.text.toString().split(",").map { it.trim() }
         val masterProductAllergens = binding.layoutAddMasterProduct.masterProductAllergensEditText.text.toString().split(",").map { it.trim() }
 
         // Check if required fields are empty for the master product
-        if (masterProductName.isEmpty() || masterProductBrand.isEmpty() || masterCategory.isEmpty() || masterType.isEmpty()) {
+        if (masterProductName.isEmpty() || masterProductBrand.isEmpty() || masterCategory.isEmpty() || masterType.isEmpty() || masterUnit.isEmpty()) {
             Toast.makeText(fragment.context, "Please fill in all required fields for the master product.", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Create a new MasterProduct object
         val masterProduct = scannedBarcode?.let {
             MasterProduct(
                 productName = masterProductName,
                 brand = masterProductBrand,
                 category = masterCategory,
                 type = masterType,
-                quantity = masterProductQuantity,
-                imageUrl = masterProductImageUrl,
+                quantity = masterQuantity,
+                unit = masterUnit,
                 description = masterProductDescription,
                 ingredients = masterProductIngredients,
                 allergens = masterProductAllergens,
@@ -203,16 +210,20 @@ class AddFragmentDataHandler(
                     binding.layoutAddManually.productNameEditText.setText(masterProductName)
                     binding.layoutAddManually.categoryAutoCompleteTextView.setText(masterCategory, false)
                     binding.layoutAddManually.typeAutoCompleteTextView.setText(masterType, false)
-                    binding.layoutAddManually.unitAutoCompleteTextView.text?.clear()
+
+                    // Set quantity from master product if available, otherwise default to 1
+                    val quantityFromMaster = masterQuantity ?: 1
+                    binding.layoutAddManually.quantityEditText.setText(quantityFromMaster.toString())
+
+                    // Set unit from master product if available
+                    binding.layoutAddManually.unitAutoCompleteTextView.setText(masterUnit, false)
+
                     binding.layoutAddManually.otherUnitEditText.text?.clear()
                     binding.layoutAddManually.otherUnitInputLayout.visibility = View.GONE
                     binding.layoutAddManually.totalAmountEditText.text?.clear()
                     binding.layoutAddManually.notesEditText.text?.clear()
                     binding.layoutAddManually.allergenAlertCheckBox.isChecked = false
 
-                    // Set quantity from master product if available, otherwise default to 1
-                    val quantityFromMaster = masterProductQuantity.toIntOrNull() ?: 1
-                    binding.layoutAddManually.quantityEditText.setText(quantityFromMaster.toString())
 
                     // Set the masterProductId in the fragment
                     fragment.masterProductId = documentReference.id
@@ -228,13 +239,14 @@ class AddFragmentDataHandler(
                     fragment.showManualEntryForm()
 
                 }
-                .addOnFailureListener {
-                    Toast.makeText(fragment.context, "Error adding master product.", Toast.LENGTH_SHORT).show()
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error adding master product", e)
+                    Toast.makeText(fragment.context, "Error adding master product: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
         }
     }
 
-    private fun getExpirationDate(): Timestamp? {
+    private fun getExpirationDate(): Timestamp {
         val year = binding.layoutAddManually.expirationDatePicker.year
         val month = binding.layoutAddManually.expirationDatePicker.month
         val day = binding.layoutAddManually.expirationDatePicker.dayOfMonth

@@ -6,4 +6,14 @@
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@android:color/darker_gray</item>
     </style>
+
+    <style name="HomeScreenSectionTitle" parent="Widget.MaterialComponents.TextView">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">?attr/textAppearanceHeadline6</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+    </style>
+
 </resources>

@@ -168,14 +168,15 @@ class AddFragment : Fragment() {
                     showProductNotFoundDialog()
                 } else {
                     val productName = data?.getStringExtra("productName") ?: ""
-                    val brand = data?.getStringExtra("brand") ?: ""
                     val category = data?.getStringExtra("category") ?: ""
+                    val typeFromScan = data?.getStringExtra("type") ?: ""
                     val quantityFromScan = data?.getStringExtra("quantity") ?: "1"
                     val unitFromScan = data?.getStringExtra("unit") ?: ""
 
                     // Pre-fill form
                     binding.layoutAddManually.productNameEditText.setText(productName)
                     binding.layoutAddManually.categoryAutoCompleteTextView.setText(category)
+                    binding.layoutAddManually.typeAutoCompleteTextView.setText(typeFromScan)
                     // Set quantity from scan result
                     binding.layoutAddManually.quantityEditText.setText(quantityFromScan)
                     // Set unit from scan result
@@ -232,8 +233,6 @@ class AddFragment : Fragment() {
                 isAddingNewMasterProduct = false
                 hasScannedData = true // Indicate that we have scanned data (even if not found in master)
                 showManualEntryForm()
-
-                //binding.layoutAddManually.barcodeEditText.setText(scannedBarcode)
             }
             .show()
     }
@@ -282,8 +281,12 @@ class AddFragment : Fragment() {
         binding.layoutAddMasterProduct.masterProductBrandEditText.text?.clear()
         binding.layoutAddMasterProduct.masterCategoryAutoCompleteTextView.text.clear()
         binding.layoutAddMasterProduct.masterTypeAutoCompleteTextView.text.clear()
-        binding.layoutAddMasterProduct.masterProductQuantityEditText.text?.clear()
-        binding.layoutAddMasterProduct.masterProductImageUrlEditText.text?.clear()
+
+        binding.layoutAddMasterProduct.masterQuantityEditText.setText("1")
+        binding.layoutAddMasterProduct.masterUnitAutoCompleteTextView.text.clear()
+        binding.layoutAddMasterProduct.otherMasterUnitEditText.text?.clear()
+        binding.layoutAddMasterProduct.otherMasterUnitInputLayout.visibility = View.GONE
+
         binding.layoutAddMasterProduct.masterProductDescriptionEditText.text?.clear()
         binding.layoutAddMasterProduct.masterProductIngredientsEditText.text?.clear()
         binding.layoutAddMasterProduct.masterProductAllergensEditText.text?.clear()

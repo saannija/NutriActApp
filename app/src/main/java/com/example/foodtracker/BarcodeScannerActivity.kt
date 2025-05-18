@@ -122,7 +122,6 @@ class BarcodeScannerActivity : AppCompatActivity() {
     }
 
     private fun searchProductInApi(barcode: String, callback: (MasterProduct?) -> Unit) {
-        // Replace with your actual API endpoint and logic
         val url = "https://world.openfoodfacts.org/api/v2/product/$barcode"
 
         val queue = Volley.newRequestQueue(this)
@@ -136,13 +135,16 @@ class BarcodeScannerActivity : AppCompatActivity() {
                     val productName = productJson.getString("product_name")
                     val brand = productJson.getString("brands")
                     val category = productJson.getString("categories")
-                    val quantity = productJson.getString("quantity")
+                    val quantityString = productJson.optString("quantity", "")
+                    val quantityValue: Int? = quantityString.filter { it.isDigit() }.toIntOrNull()
+                    val unit: String = quantityString.filter { it.isLetter() }.trim()
 
                     val product = MasterProduct(
                         productName = productName,
                         brand = brand,
                         category = category,
-                        quantity = quantity,
+                        quantity = quantityValue,
+                        unit = unit,
                         barcode = barcode
                     )
                     callback(product)
@@ -183,7 +185,9 @@ class BarcodeScannerActivity : AppCompatActivity() {
         intent.putExtra("productName", product.productName)
         intent.putExtra("brand", product.brand)
         intent.putExtra("category", product.category)
-        intent.putExtra("quantity", product.quantity)
+        intent.putExtra("quantity", product.quantity?.toString())
+        intent.putExtra("type", product.type)
+        intent.putExtra("unit", product.unit)
         intent.putExtra("barcode", product.barcode)
         intent.putExtra("masterProductId", product.id)
         setResult(Activity.RESULT_OK, intent)

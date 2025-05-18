@@ -8,6 +8,9 @@
     <style name="Theme.FoodTracker" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary" type="color">@color/green</item>
         <item name="android:itemBackground">@color/bottom_nav_item_bg</item>
+
+        <item name="alertDialogTheme">@style/ThemeOverlay.MaterialComponents.Dialog.Alert</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.MaterialComponents.MaterialAlertDialog</item>
     </style>
 
     <!-- Toolbar Theme -->
@@ -18,5 +21,18 @@
     <!-- <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>-->
     <style name="LoginButtonStyle" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/white</item>
+    </style>
+
+    <style name="App.MaterialAlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="buttonBarPositiveButtonStyle">@style/App.Dialog.Button.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/App.Dialog.Button.Negative</item>
+    </style>
+
+    <style name="App.Dialog.Button.Positive" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/red</item>
+    </style>
+
+    <style name="App.Dialog.Button.Negative" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">?attr/colorPrimary</item>
     </style>
 </resources>

@@ -1,14 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="black">#FF000000</color>
-    <color name="red">#CC0000FF</color>
+    <color name="red">#B00020</color>
     <color name="white">#FFFFFF</color>
     <color name="green">#74F05C</color>
     <color name="dark_green">#123106</color>
+
+    <color name="my_primary_color">@color/green</color>
+    <color name="my_primary_variant_color">@color/dark_green</color>
+    <color name="my_surface_color">#FDFDFD</color>
+    <color name="my_surface_container_lowest_color">#FFFFFF</color>
+    <color name="my_text_on_surface_color">#1A1A1A</color>
+    <color name="my_on_surface_variant_color">#454545</color>
+    <color name="my_light_gray_outline">#E0E0E0</color>
+
     <color name="expired_tint">#FFCDD2</color>
     <color name="near_expiry_tint">#FFF9C4</color>
-    <color name="default_background">#FFFFFF</color>
+    <color name="default_background">@color/white</color>
     <color name="warning_text_orange">#FFA500</color>
     <color name="warning_stroke_orange">#80FFA500</color>
     <color name="error_stroke_red">#80FF0000</color>
+
+    <color name="bottom_nav_item_bg">#E0E0E0</color>
 </resources>

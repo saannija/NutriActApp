@@ -44,7 +44,7 @@ class ExpiringProductsAdapter(private val onItemClicked: (Product) -> Unit) :
         fun bind(product: Product) {
             binding.productNameTextViewCompact.text = product.productName
             product.expirationDate?.let {
-                binding.expirationDateTextViewCompact.text = "Expires: ${dateFormat.format(it.toDate())}"
+                binding.expirationDateTextViewCompact.text = "${dateFormat.format(it.toDate())}"
             } ?: run {
                 binding.expirationDateTextViewCompact.text = "No Expiry Date"
             }

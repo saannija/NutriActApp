@@ -46,7 +46,7 @@
             android:id="@+id/expirationDateTextViewCompact"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Expires: 2024-12-25"
+            tools:text="2024-12-25"
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:gravity="center_horizontal"
             android:textColor="?attr/colorOnSurfaceVariant"/>

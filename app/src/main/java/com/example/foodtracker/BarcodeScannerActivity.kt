@@ -33,23 +33,23 @@ import java.util.concurrent.Executors
 
 class BarcodeScannerActivity : AppCompatActivity() {
 
-    private lateinit var cameraExecutor: ExecutorService
-    private lateinit var barcodeScanner: BarcodeScanner
-    private lateinit var previewView: PreviewView
-    private lateinit var barcodeAnalyzer: BarcodeAnalyzer
-    private lateinit var db: FirebaseFirestore
+    private lateinit var cameraExecutor: ExecutorService // Kameras analīzei
+    private lateinit var barcodeScanner: BarcodeScanner// ML Kit bibliotēkas svītrkodu skeneris
+    private lateinit var previewView: PreviewView // Priekšskatījuma skats kamerai
+    private lateinit var barcodeAnalyzer: BarcodeAnalyzer // Apstrādā attēlus ar svītrkodiem
+    private lateinit var db: FirebaseFirestore // Firebase datubāzes instances objekts
 
-    private val CAMERA_PERMISSION_REQUEST_CODE = 100
-    private val EXPIRATION_SCAN_REQUEST_CODE = 201
+    private val CAMERA_PERMISSION_REQUEST_CODE = 100 //Pieprasījuma kods kamerai
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_barcode_scanning)
 
+        // Inicializē skatus un Firebase datubāzi
         previewView = findViewById(R.id.previewView)
         db = FirebaseFirestore.getInstance()
 
-        // Request camera permissions
+        // Pārbauda un pieprasa kameras atļauju
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera()
         } else {
@@ -58,28 +58,31 @@ class BarcodeScannerActivity : AppCompatActivity() {
             )
         }
 
+        // Inicializē kameru un svītrkoda analizēšanu
         cameraExecutor = Executors.newSingleThreadExecutor()
         barcodeScanner = BarcodeScanning.getClient()
     }
 
+    // Funkcija, kas inicializē kameru un analizatoru
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
-            // Used to bind the lifecycle of cameras to the lifecycle owner
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            // Preview
+            // Priekšskatījums kamerai
             val preview = Preview.Builder()
                 .build()
                 .also {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
 
-            // Image analyzer
+            // Inicializē barcodeAnalyzer ar funkciju, kas tiek izsaukta, kad svītrkods tiek atrasts
             barcodeAnalyzer = BarcodeAnalyzer { barcode ->
                 searchProduct(barcode)
             }
+
+            // Attēla analizators (real-time svītrkodu apstrādei)
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
@@ -87,18 +90,12 @@ class BarcodeScannerActivity : AppCompatActivity() {
                     it.setAnalyzer(cameraExecutor, barcodeAnalyzer)
                 }
 
-            // Select back camera as a default
+            // Pēc noklusējuma izvēlas aizmugurējo kameru
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
-                // Unbind use cases before rebinding
                 cameraProvider.unbindAll()
-
-                // Bind use cases to camera
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageAnalyzer
-                )
-
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
@@ -106,6 +103,7 @@ class BarcodeScannerActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    // Meklē produktu pēc svītrkoda vispirms OpenFoodFacts, atd Firebase datubāzē
     private fun searchProduct(barcode: String) {
         searchProductInApi(barcode) { productFromApi ->if (productFromApi != null) {
             returnProduct(productFromApi)
@@ -121,10 +119,11 @@ class BarcodeScannerActivity : AppCompatActivity() {
         }
     }
 
+    // Izmanto OpenFoodFacts, lai meklētu produktu pēc svītrkoda
     private fun searchProductInApi(barcode: String, callback: (MasterProduct?) -> Unit) {
         val url = "https://world.openfoodfacts.org/api/v2/product/$barcode"
-
         val queue = Volley.newRequestQueue(this)
+
         val stringRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
@@ -132,6 +131,7 @@ class BarcodeScannerActivity : AppCompatActivity() {
                     val jsonResponse = JSONObject(response)
                     val productJson = jsonResponse.getJSONObject("product")
 
+                    // No OFF izvelk produkta datus
                     val productName = productJson.getString("product_name")
                     val brand = productJson.getString("brands")
                     val category = productJson.getString("categories")
@@ -161,6 +161,7 @@ class BarcodeScannerActivity : AppCompatActivity() {
         queue.add(stringRequest)
     }
 
+    // Meklē produktu Firebase datubāzē "masterProducts"
     private fun searchProductInDatabase(barcode: String, callback: (MasterProduct?) -> Unit) {
         db.collection("masterProducts")
             .whereEqualTo("barcode", barcode)
@@ -180,6 +181,7 @@ class BarcodeScannerActivity : AppCompatActivity() {
             }
     }
 
+    // Ja produkts atrasts - atgriež to ar intent atpakaļ uz iepriekšējo ekrānu
     private fun returnProduct(product: MasterProduct) {
         val intent = Intent()
         intent.putExtra("productName", product.productName)
@@ -194,6 +196,7 @@ class BarcodeScannerActivity : AppCompatActivity() {
         finish()
     }
 
+    // Ja produkts nav atrasts - atgriež so statusu ar svītrkodu
     private fun returnProductNotFound(barcode: String) {
         val intent = Intent()
         intent.putExtra("productNotFound", true)
@@ -202,12 +205,14 @@ class BarcodeScannerActivity : AppCompatActivity() {
         finish()
     }
 
+    // Atbrīvo resursus, kas skats tiek iznīcināts
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
         barcodeScanner.close()
     }
 
+    // Kameras atļaujas rezultātu apstrāde
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults:
         IntArray
@@ -223,6 +228,7 @@ class BarcodeScannerActivity : AppCompatActivity() {
         }
     }
 
+    // Iekšējā klase, kas analizē attēlus no kameras un meklē svītrkodus
     inner class BarcodeAnalyzer(private val onBarcodeDetected: (String) -> Unit) : ImageAnalysis.Analyzer {
         private var scanningPaused = false
 
@@ -272,6 +278,7 @@ class BarcodeScannerActivity : AppCompatActivity() {
         }
     }
 
+    // Funkcija, kas parāda paziņojumu uz ekrāna
     private fun showToast(message: String) {
         runOnUiThread {
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()

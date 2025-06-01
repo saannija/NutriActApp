@@ -11,178 +11,84 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Calendar
 
+// Klase apstrādā datu saglabāšanu un rediģēšanu pievienošanas fragmentā (AddFragment)
 class AddFragmentDataHandler(
-    private val fragment: AddFragment,
-    private val binding: FragmentAddBinding,
-    private val auth: FirebaseAuth,
-    private val db: FirebaseFirestore
+    private val fragment: AddFragment, // Fragmenta instance
+    private val binding: FragmentAddBinding, // Pieeja visiem UI elementiem
+    private val auth: FirebaseAuth, // Firebase autentifikācijas instance
+    private val db: FirebaseFirestore // Firebase Firestore datubāzes instance
 ) {
 
+    // Produkta pievienošana Firestore datubāzē
     fun addProductToFirebase(quantity: Int, scannedBarcode: String?, masterProductId: String?) {
-        // Get the current user's ID
-        val userId = auth.currentUser?.uid
-        Log.d(TAG, "Current user ID: $userId")
+        val userId = auth.currentUser?.uid // Lietotāja ID
+
+        // Ja lietotājs nav ielogojies, rāda kļūdas ziņu (nebūtu jānotiek)
         if (userId == null) {
-            Toast.makeText(fragment.context, "User not logged in.", Toast.LENGTH_SHORT).show()
+            showToast("User not logged in.")
             return
         }
 
-        // Get the data from the input fields
-        val productName = binding.layoutAddManually.productNameEditText.text.toString().trim()
-        // Get category from the AutoCompleteTextView, check for "Other"
-        val category = if (binding.layoutAddManually.otherCategoryInputLayout.visibility == View.VISIBLE) {
-            binding.layoutAddManually.otherCategoryEditText.text.toString().trim()
-        } else {
-            binding.layoutAddManually.categoryAutoCompleteTextView.text.toString().trim()
-        }
-        // Get type from the AutoCompleteTextView, check for "Other"
-        val type = if (binding.layoutAddManually.otherTypeInputLayout.visibility == View.VISIBLE) {
-            binding.layoutAddManually.otherTypeEditText.text.toString().trim()
-        } else {
-            binding.layoutAddManually.typeAutoCompleteTextView.text.toString().trim()
-        }
-        val expirationDate = getExpirationDate()
-        val storageStatus = getStorageStatus()
-        // Get quantity from the EditText
-        val productQuantity = binding.layoutAddManually.quantityEditText.text.toString().toIntOrNull() ?: 1
-        // Get unit from the AutoCompleteTextView, check for "Other"
-        val unit = if (binding.layoutAddManually.otherUnitInputLayout.visibility == View.VISIBLE) {
-            binding.layoutAddManually.otherUnitEditText.text.toString().trim()
-        } else {
-            binding.layoutAddManually.unitAutoCompleteTextView.text.toString().trim()
-        }
-        val totalAmount = binding.layoutAddManually.totalAmountEditText.text.toString().toIntOrNull() ?: 0
-        val notes = binding.layoutAddManually.notesEditText.text.toString().trim()
-        val allergenAlert = binding.layoutAddManually.allergenAlertCheckBox.isChecked
+        // Saņem datus no ievades laukiem
+        val product = collectProductData(userId, scannedBarcode, masterProductId) ?: return
 
-        // Check if required fields are empty
-        if (productName.isEmpty() || category.isEmpty() || type.isEmpty() || productQuantity <= 0 || unit.isEmpty()) {
-            Toast.makeText(fragment.context, "Please fill in all required fields.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Create a new product object regardless of scannedBarcode
-        val product = Product(
-            userId = userId,
-            productName = productName,
-            category = category,
-            type = type,
-            expirationDate = expirationDate,
-            storageStatus = storageStatus,
-            quantity = productQuantity,
-            unit = unit,
-            totalAmount = totalAmount,
-            notes = notes,
-            allergenAlert = allergenAlert,
-            masterProductId = masterProductId,
-            barcode = scannedBarcode
-        )
-
-        Log.d(TAG, "Attempting to add product: $product")
-        // Add the product to Firestore
+        // Saglabā produktu Firestore "products" datubāzē
         db.collection("products")
             .add(product)
             .addOnSuccessListener {
-                Toast.makeText(fragment.context, "Product added successfully.", Toast.LENGTH_SHORT).show()
-                fragment.clearFields()
-                fragment.showAddOptions()
+                showToast("Product added successfully.")
+                fragment.clearFields() // Notīra formas laukus
+                fragment.showAddOptions() // Atgriežas uz izvēles skatu
             }
             .addOnFailureListener {
-                Toast.makeText(fragment.context, "Error adding product", Toast.LENGTH_LONG).show()
+                showToast("Error adding product")
             }
     }
 
+    // Esošā produkta rediģēšana (update pēc ID)
     fun updateProductInFirebase(documentId: String, quantity: Int) {
-        // Get the data from the input fields
-        val productName = binding.layoutAddManually.productNameEditText.text.toString().trim()
-        // Get category from the AutoCompleteTextView, check for "Other"
-        val category = if (binding.layoutAddManually.otherCategoryInputLayout.visibility == View.VISIBLE) {
-            binding.layoutAddManually.otherCategoryEditText.text.toString().trim()
-        } else {
-            binding.layoutAddManually.categoryAutoCompleteTextView.text.toString().trim()
-        }
-        // Get type from the AutoCompleteTextView, check for "Other"
-        val type = if (binding.layoutAddManually.otherTypeInputLayout.visibility == View.VISIBLE) {
-            binding.layoutAddManually.otherTypeEditText.text.toString().trim()
-        } else {
-            binding.layoutAddManually.typeAutoCompleteTextView.text.toString().trim()
-        }
-        val expirationDate = getExpirationDate()
-        val storageStatus = getStorageStatus()
-        // Get quantity from the EditText
-        val productQuantity = binding.layoutAddManually.quantityEditText.text.toString().toIntOrNull() ?: 1
-        // Get unit from the AutoCompleteTextView, check for "Other"
-        val unit = if (binding.layoutAddManually.otherUnitInputLayout.visibility == View.VISIBLE) {
-            binding.layoutAddManually.otherUnitEditText.text.toString().trim()
-        } else {
-            binding.layoutAddManually.unitAutoCompleteTextView.text.toString().trim()
-        }
-        val totalAmount = binding.layoutAddManually.totalAmountEditText.text.toString().toIntOrNull() ?: 0
-        val notes = binding.layoutAddManually.notesEditText.text.toString().trim()
-        val allergenAlert = binding.layoutAddManually.allergenAlertCheckBox.isChecked
 
-        // Check if required fields are empty
-        if (productName.isEmpty() || category.isEmpty() || type.isEmpty() || productQuantity <= 0 || unit.isEmpty()) {
-            Toast.makeText(fragment.context, "Please fill in all required fields.", Toast.LENGTH_SHORT).show()
-            return
-        }
+        // Atrod un validē datus
+        val updates = collectProductUpdateData() ?: return
 
-        // Create a map of the fields to update
-        val updates = hashMapOf<String, Any>(
-            "productName" to productName,
-            "category" to category,
-            "type" to type,
-            "expirationDate" to expirationDate!!,
-            "storageStatus" to storageStatus,
-            "quantity" to productQuantity,
-            "unit" to unit,
-            "totalAmount" to totalAmount,
-            "notes" to notes,
-            "allergenAlert" to allergenAlert,
-            "updatedDate" to Timestamp.now()
-        )
-
-        // Update the product in Firestore
+        // Atjauno dokumentu Firestore ar jauniem datiem pēc dokumenta ID
         db.collection("products")
             .document(documentId)
             .update(updates)
             .addOnSuccessListener {
-                Toast.makeText(fragment.context, "Product updated successfully.", Toast.LENGTH_SHORT).show()
-                // Navigate back to the inventory list
-                fragment.parentFragmentManager.popBackStack()
+                showToast("Product updated successfully.")
+                fragment.parentFragmentManager.popBackStack() // Atgriežas atpakaļ UI skatā
             }
             .addOnFailureListener {
-                Toast.makeText(fragment.context, "Error updating product.", Toast.LENGTH_SHORT).show()
+                showToast("Error updating product.")
             }
     }
 
+    // Master produkta pievienošana
     fun addNewMasterProductAndContinue(scannedBarcode: String?) {
-        // Get the data from the input fields for the master product
+        // Saņem datus no master produkta formas laukiem
         val masterProductName = binding.layoutAddMasterProduct.masterProductNameEditText.text.toString().trim()
         val masterProductBrand = binding.layoutAddMasterProduct.masterProductBrandEditText.text.toString().trim()
         val masterCategory = binding.layoutAddMasterProduct.masterCategoryAutoCompleteTextView.text.toString().trim()
         val masterType = binding.layoutAddMasterProduct.masterTypeAutoCompleteTextView.text.toString().trim()
-
         val masterQuantityString = binding.layoutAddMasterProduct.masterQuantityEditText.text.toString().trim()
         val masterQuantity = masterQuantityString.toIntOrNull()
-
         val masterUnit = if (binding.layoutAddMasterProduct.otherMasterUnitInputLayout.visibility == View.VISIBLE) {
             binding.layoutAddMasterProduct.otherMasterUnitEditText.text.toString().trim()
         } else {
             binding.layoutAddMasterProduct.masterUnitAutoCompleteTextView.text.toString().trim()
         }
-
         val masterProductDescription = binding.layoutAddMasterProduct.masterProductDescriptionEditText.text.toString().trim()
-        // Convert comma-separated strings to lists
         val masterProductIngredients = binding.layoutAddMasterProduct.masterProductIngredientsEditText.text.toString().split(",").map { it.trim() }
         val masterProductAllergens = binding.layoutAddMasterProduct.masterProductAllergensEditText.text.toString().split(",").map { it.trim() }
 
-        // Check if required fields are empty for the master product
+        // Validācija
         if (masterProductName.isEmpty() || masterProductBrand.isEmpty() || masterCategory.isEmpty() || masterType.isEmpty() || masterUnit.isEmpty()) {
-            Toast.makeText(fragment.context, "Please fill in all required fields for the master product.", Toast.LENGTH_SHORT).show()
+            showToast("Please fill in all required fields for the master product.")
             return
         }
 
+        // Izveido masterProduct objektu
         val masterProduct = scannedBarcode?.let {
             MasterProduct(
                 productName = masterProductName,
@@ -198,54 +104,126 @@ class AddFragmentDataHandler(
             )
         }
 
-        // Add the master product to Firestore
+        // Saglabā masterProduct Firestore "masterProducts" datubāzē
         if (masterProduct != null) {
             db.collection("masterProducts")
                 .add(masterProduct)
                 .addOnSuccessListener { documentReference ->
-                    Log.d(TAG, "Master Product added with ID: ${documentReference.id}")
-                    Toast.makeText(fragment.context, "Master Product added successfully.", Toast.LENGTH_SHORT).show()
+                    showToast("Master Product added successfully.")
+                    // Aizpilda laukus produkta pievienošanai no master product datiem
+                    prefillProductFormFromMaster(masterProduct)
 
-                    // After adding the master product, pre-fill the manual entry form with data from the newly created master product and show it
-                    binding.layoutAddManually.productNameEditText.setText(masterProductName)
-                    binding.layoutAddManually.categoryAutoCompleteTextView.setText(masterCategory, false)
-                    binding.layoutAddManually.typeAutoCompleteTextView.setText(masterType, false)
-
-                    // Set quantity from master product if available, otherwise default to 1
-                    val quantityFromMaster = masterQuantity ?: 1
-                    binding.layoutAddManually.quantityEditText.setText(quantityFromMaster.toString())
-
-                    // Set unit from master product if available
-                    binding.layoutAddManually.unitAutoCompleteTextView.setText(masterUnit, false)
-
-                    binding.layoutAddManually.otherUnitEditText.text?.clear()
-                    binding.layoutAddManually.otherUnitInputLayout.visibility = View.GONE
-                    binding.layoutAddManually.totalAmountEditText.text?.clear()
-                    binding.layoutAddManually.notesEditText.text?.clear()
-                    binding.layoutAddManually.allergenAlertCheckBox.isChecked = false
-
-
-                    // Set the masterProductId in the fragment
+                    // Tīra laukus, atjauno UI
                     fragment.masterProductId = documentReference.id
-                    // Set scannedBarcode in the fragment
                     fragment.scannedBarcode = scannedBarcode
-
-                    // Clear the master product fields
                     fragment.clearMasterProductFields()
-
-                    // Show the manual entry form
                     fragment.isAddingNewMasterProduct = false
                     fragment.hasScannedData = true
                     fragment.showManualEntryForm()
-
                 }
                 .addOnFailureListener { e ->
-                    Log.e(TAG, "Error adding master product", e)
-                    Toast.makeText(fragment.context, "Error adding master product: ${e.message}", Toast.LENGTH_SHORT).show()
+                    showToast("Error adding master product: ${e.message}")
                 }
         }
     }
 
+    // Produkta dzēšana (soft, iestata delete = true)
+    fun deleteProduct(documentId: String, callback: (Boolean) -> Unit) {
+        db.collection("products").document(documentId)
+            .update("deleted", true)
+            .addOnSuccessListener { callback(true) }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error soft deleting document $documentId", e)
+                callback(false)
+            }
+    }
+
+    // Iegūst ievades datus
+    private fun collectProductData(userId: String, scannedBarcode: String?, masterProductId: String?): Product? {
+        // Ievāc visus datus no formas (daļa atkarīga no tā vai ir izvēlēta "Other" opcija)
+        val productName = binding.layoutAddManually.productNameEditText.text.toString().trim()
+        val category = if (binding.layoutAddManually.otherCategoryInputLayout.visibility == View.VISIBLE) {
+            binding.layoutAddManually.otherCategoryEditText.text.toString().trim()
+        } else {
+            binding.layoutAddManually.categoryAutoCompleteTextView.text.toString().trim()
+        }
+        val type = if (binding.layoutAddManually.otherTypeInputLayout.visibility == View.VISIBLE) {
+            binding.layoutAddManually.otherTypeEditText.text.toString().trim()
+        } else {
+            binding.layoutAddManually.typeAutoCompleteTextView.text.toString().trim()
+        }
+        val expirationDate = getExpirationDate()
+        val storageStatus = getStorageStatus()
+        val productQuantity = binding.layoutAddManually.quantityEditText.text.toString().toIntOrNull() ?: 1
+        val unit = if (binding.layoutAddManually.otherUnitInputLayout.visibility == View.VISIBLE) {
+            binding.layoutAddManually.otherUnitEditText.text.toString().trim()
+        } else {
+            binding.layoutAddManually.unitAutoCompleteTextView.text.toString().trim()
+        }
+        val totalAmount = binding.layoutAddManually.totalAmountEditText.text.toString().toIntOrNull() ?: 0
+        val notes = binding.layoutAddManually.notesEditText.text.toString().trim()
+        val allergenAlert = binding.layoutAddManually.allergenAlertCheckBox.isChecked
+
+        // Validācija - obligātie lauki
+        if (productName.isEmpty() || category.isEmpty() || type.isEmpty() || productQuantity <= 0 || unit.isEmpty()) {
+            showToast("Please fill in all required fields.")
+            return null
+        }
+
+        // Atgriež produkta objektu
+        return Product(
+            userId = userId,
+            productName = productName,
+            category = category,
+            type = type,
+            expirationDate = expirationDate,
+            storageStatus = storageStatus,
+            quantity = productQuantity,
+            unit = unit,
+            totalAmount = totalAmount,
+            notes = notes,
+            allergenAlert = allergenAlert,
+            masterProductId = masterProductId,
+            barcode = scannedBarcode
+        )
+    }
+
+    // Ievades lauku iegūšana rediģēšanai
+    private fun collectProductUpdateData(): HashMap<String, Any>? {
+        val product = collectProductData("", null, null) ?: return null
+
+        // Izveido atjaunojamo lauku map
+        return hashMapOf(
+            "productName" to product.productName,
+            "category" to product.category,
+            "type" to product.type,
+            "expirationDate" to product.expirationDate!!,
+            "storageStatus" to product.storageStatus,
+            "quantity" to product.quantity,
+            "unit" to product.unit,
+            "totalAmount" to product.totalAmount,
+            "notes" to product.notes,
+            "allergenAlert" to product.allergenAlert,
+            "updatedDate" to Timestamp.now()
+        )
+    }
+
+    // Aizpilda produktu formas laukus no master product
+    private fun prefillProductFormFromMaster(master: MasterProduct) {
+        binding.layoutAddManually.productNameEditText.setText(master.productName)
+        binding.layoutAddManually.categoryAutoCompleteTextView.setText(master.category, false)
+        binding.layoutAddManually.typeAutoCompleteTextView.setText(master.type, false)
+        val quantityFromMaster = master.quantity ?: 1
+        binding.layoutAddManually.quantityEditText.setText(quantityFromMaster.toString())
+        binding.layoutAddManually.unitAutoCompleteTextView.setText(master.unit, false)
+        binding.layoutAddManually.otherUnitEditText.text?.clear()
+        binding.layoutAddManually.otherUnitInputLayout.visibility = View.GONE
+        binding.layoutAddManually.totalAmountEditText.text?.clear()
+        binding.layoutAddManually.notesEditText.text?.clear()
+        binding.layoutAddManually.allergenAlertCheckBox.isChecked = false
+    }
+
+    // Funkcija, kas atgriež datumu no DatePicker kā Firebase Timestamp
     private fun getExpirationDate(): Timestamp {
         val year = binding.layoutAddManually.expirationDatePicker.year
         val month = binding.layoutAddManually.expirationDatePicker.month
@@ -256,8 +234,14 @@ class AddFragmentDataHandler(
         return Timestamp(calendar.time)
     }
 
+    // Atgriež vai produkts ir atvērts vai nē
     private fun getStorageStatus(): String {
         return if (binding.layoutAddManually.unopenedChip.isChecked) "Unopened" else "Opened"
+    }
+
+    // Īss Toast paziņojums
+    private fun showToast(message: String) {
+        Toast.makeText(fragment.context, message, Toast.LENGTH_SHORT).show()
     }
 
     companion object {

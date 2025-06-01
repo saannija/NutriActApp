@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -59,6 +60,7 @@ class AddFragment : Fragment() {
 
         uiSetup.setupUI()
         listenersSetup.setupListeners()
+        setupDeleteButtonListener()
         setupActivityResultLauncher()
 
         // Check if we're editing an existing product and pre-fill the form
@@ -67,15 +69,15 @@ class AddFragment : Fragment() {
             if (documentId != null) {
                 // We are in edit mode, pre-fill the form
                 binding.layoutAddManually.productNameEditText.setText(it.getString("productName"))
-                binding.layoutAddManually.categoryAutoCompleteTextView.setText(it.getString("category")) // Corrected
-                binding.layoutAddManually.typeAutoCompleteTextView.setText(it.getString("type")) // Corrected
+                binding.layoutAddManually.categoryAutoCompleteTextView.setText(it.getString("category"))
+                binding.layoutAddManually.typeAutoCompleteTextView.setText(it.getString("type"))
 
                 // Set quantity and unit
                 binding.layoutAddManually.quantityEditText.setText(it.getInt("quantity").toString())
                 val unit = it.getString("unit")
-                binding.layoutAddManually.unitAutoCompleteTextView.setText(unit) // Corrected
+                binding.layoutAddManually.unitAutoCompleteTextView.setText(unit)
                 // Check if the unit is in the predefined list and show "Other" if not
-                val predefinedUnits = resources.getStringArray(R.array.product_units).toList() // Assuming you have this array
+                val predefinedUnits = resources.getStringArray(R.array.product_units).toList()
                 if (unit != null && !predefinedUnits.contains(unit)) {
                     binding.layoutAddManually.otherUnitInputLayout.visibility = View.VISIBLE
                     binding.layoutAddManually.otherUnitEditText.setText(unit)
@@ -109,8 +111,14 @@ class AddFragment : Fragment() {
 
                 // Change button text to "Update Product"
                 binding.layoutAddManually.btnAddProduct.text = "Update Product"
+                // Make delete button visible only in edit mode
+                binding.layoutAddManually.btnDeleteProduct.visibility = View.VISIBLE
                 hasScannedData = true // Ensure manual entry form is shown
                 isAddingNewMasterProduct = false // Ensure we are not in master product mode
+            } else {
+                // Not editing, ensure delete button is hidden and add button text is correct
+                binding.layoutAddManually.btnAddProduct.text = "Add Product"
+                binding.layoutAddManually.btnDeleteProduct.visibility = View.GONE
             }
         }
 
@@ -147,9 +155,15 @@ class AddFragment : Fragment() {
         }
         // After restoring state, ensure the correct layout is shown
         if (documentId != null || hasScannedData) {
-            showManualEntryForm()
+            showManualEntryForm() // Handle delete button visibility based on isEditing()
+            if (isEditing()) {
+                binding.layoutAddManually.btnAddProduct.text = "Update Product"
+            } else {
+                binding.layoutAddManually.btnAddProduct.text = "Add Product"
+            }
         } else {
             showAddOptions()
+            binding.layoutAddManually.btnAddProduct.text = "Add Product"
         }
     }
 
@@ -208,9 +222,16 @@ class AddFragment : Fragment() {
         if (isAddingNewMasterProduct) {
             binding.layoutAddManually.root.visibility = View.GONE
             binding.layoutAddMasterProduct.root.visibility = View.VISIBLE
+            binding.layoutAddManually.btnDeleteProduct.visibility = View.GONE
         } else {
             binding.layoutAddManually.root.visibility = View.VISIBLE
             binding.layoutAddMasterProduct.root.visibility = View.GONE
+            // Show delete button only if we are in edit mode (documentId is not null)
+            if (isEditing()) {
+                binding.layoutAddManually.btnDeleteProduct.visibility = View.VISIBLE
+            } else {
+                binding.layoutAddManually.btnDeleteProduct.visibility = View.GONE
+            }
         }
     }
 
@@ -218,6 +239,7 @@ class AddFragment : Fragment() {
         binding.layoutAddOptions.visibility = View.VISIBLE
         binding.layoutAddManually.root.visibility = View.GONE
         binding.layoutAddMasterProduct.root.visibility = View.GONE
+        binding.layoutAddManually.btnDeleteProduct.visibility = View.GONE
     }
 
     private fun showProductNotFoundDialog() {
@@ -241,6 +263,48 @@ class AddFragment : Fragment() {
         binding.layoutAddOptions.visibility = View.GONE
         binding.layoutAddManually.root.visibility = View.GONE
         binding.layoutAddMasterProduct.root.visibility = View.VISIBLE
+    }
+
+    private fun setupDeleteButtonListener() {
+        binding.layoutAddManually.btnDeleteProduct.setOnClickListener {
+            showDeleteConfirmationDialog()
+        }
+    }
+
+    private fun showDeleteConfirmationDialog() {
+        // Ensure we are in edit mode and have a documentId
+        if (!isEditing() || documentId == null) {
+            // Should not happen if button visibility is managed correctly
+            Toast.makeText(context, "Cannot delete: No product selected for editing.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val currentDocumentId = documentId!!
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Delete Product")
+            .setMessage("Are you sure you want to delete this product? This action cannot be undone.")
+            .setPositiveButton("Delete") { dialog, which ->
+                dataHandler.deleteProduct(currentDocumentId) { success ->
+                    activity?.runOnUiThread { // Ensure execution on the main thread
+                        if (!isAdded || view == null) {
+                            android.util.Log.w("AddFragment", "Delete callback received but fragment not in a valid state.")
+                            return@runOnUiThread
+                        }
+
+                        if (success) {
+                            Toast.makeText(requireContext(), "Product deleted successfully", Toast.LENGTH_SHORT).show()
+                            try {
+                                parentFragmentManager.popBackStack()
+                            } catch (e: IllegalStateException) {
+                                android.util.Log.e("AddFragment", "Error navigating back using parentFragmentManager after delete: ", e)
+                            }
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     override fun onDestroyView() {
@@ -274,6 +338,7 @@ class AddFragment : Fragment() {
         scannedBarcode = null
         masterProductId = null
         binding.layoutAddManually.btnAddProduct.text = "Add Product"
+        binding.layoutAddManually.btnDeleteProduct.visibility = View.GONE
     }
 
     fun clearMasterProductFields() {

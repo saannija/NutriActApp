@@ -154,7 +154,6 @@
                 android:text="Opened" />
         </com.google.android.material.chip.ChipGroup>
 
-        <!-- Quantity and Unit Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -240,7 +239,6 @@
 
         </LinearLayout>
 
-        <!-- Other Unit Input (initially hidden) -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/otherUnitInputLayout"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -257,7 +255,6 @@
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Total Amount Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -344,11 +341,24 @@
             android:text="Allergen Alert" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDeleteProduct"
+            style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Delete"
+            app:icon="@drawable/ic_delete"
+            android:textColor="?attr/colorError"
+            app:iconTint="?attr/colorError"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddProduct"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="8dp"
             android:text="Add Product" />
 
     </LinearLayout>

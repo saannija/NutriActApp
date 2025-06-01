@@ -116,6 +116,22 @@ class AddFragment : Fragment() {
                 hasScannedData = true // Ensure manual entry form is shown
                 isAddingNewMasterProduct = false // Ensure we are not in master product mode
             } else {
+                // Check for navigation arguments from HomeFragment
+                val shouldStartScanning = it.getBoolean("startScanning", false)
+                val shouldShowManualEntry = it.getBoolean("showManualEntry", false)
+
+                if (shouldStartScanning) {
+                    // Trigger barcode scanning immediately
+                    view.post {
+                        val intent = Intent(requireContext(), BarcodeScannerActivity::class.java)
+                        barcodeResultLauncher.launch(intent)
+                    }
+                } else if (shouldShowManualEntry) {
+                    // Show manual entry form immediately
+                    hasScannedData = true
+                    isAddingNewMasterProduct = false
+                }
+
                 // Not editing, ensure delete button is hidden and add button text is correct
                 binding.layoutAddManually.btnAddProduct.text = "Add Product"
                 binding.layoutAddManually.btnDeleteProduct.visibility = View.GONE
@@ -132,7 +148,6 @@ class AddFragment : Fragment() {
         // Initially hide the manual and master product layouts (will be shown by showManualEntryForm or showAddOptions)
         binding.layoutAddManually.root.visibility = View.GONE
         binding.layoutAddMasterProduct.root.visibility = View.GONE
-
 
         return view
     }

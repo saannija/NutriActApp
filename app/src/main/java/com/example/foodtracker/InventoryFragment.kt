@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,6 +25,7 @@ class InventoryFragment : Fragment() {
 
     private lateinit var inventoryRecyclerView: RecyclerView
     private lateinit var inventoryAdapter: InventoryAdapter
+    private lateinit var emptyStateTextView: TextView
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private val inventoryList = mutableListOf<InventoryItem>()
@@ -40,6 +42,8 @@ class InventoryFragment : Fragment() {
         db = FirebaseFirestore.getInstance()
 
         inventoryRecyclerView = view.findViewById(R.id.inventoryRecyclerView)
+        emptyStateTextView = view.findViewById(R.id.emptyStateTextView)
+
         inventoryRecyclerView.layoutManager = LinearLayoutManager(context)
 
         inventoryAdapter = InventoryAdapter(
@@ -52,6 +56,16 @@ class InventoryFragment : Fragment() {
         loadInventoryData()
 
         return view
+    }
+
+    private fun updateEmptyState() {
+        if (inventoryList.isEmpty()) {
+            inventoryRecyclerView.visibility = View.GONE
+            emptyStateTextView.visibility = View.VISIBLE
+        } else {
+            inventoryRecyclerView.visibility = View.VISIBLE
+            emptyStateTextView.visibility = View.GONE
+        }
     }
 
     private fun loadInventoryData() {
@@ -79,6 +93,8 @@ class InventoryFragment : Fragment() {
             }
             .addOnFailureListener { exception ->
                 Log.w(TAG, "Error getting documents (Query 1): ", exception)
+                // Still update empty state even if query fails
+                updateEmptyState()
             }
     }
 
@@ -144,9 +160,11 @@ class InventoryFragment : Fragment() {
                 inventoryList.clear()
                 inventoryList.addAll(currentItems)
                 inventoryAdapter.notifyDataSetChanged()
+                updateEmptyState()
             }
             .addOnFailureListener { exception ->
                 Log.w(TAG, "Error getting documents (Query 2): ", exception)
+                updateEmptyState()
             }
     }
 
@@ -243,13 +261,14 @@ class InventoryFragment : Fragment() {
                 if (itemIndex != -1) {
                     inventoryList.removeAt(itemIndex)
                     inventoryAdapter.notifyItemRemoved(itemIndex)
-                    loadInventoryData()
+                    updateEmptyState()
                 } else {
                     // If not found (shouldn't happen)
                     loadInventoryData()
                 }
             }
             .addOnFailureListener { e ->
+                Log.w(TAG, "Error deleting item: ", e)
             }
     }
 

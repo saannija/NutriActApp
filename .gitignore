@@ -49,7 +49,6 @@ render.experimental.xml
 google-services.json
 
 app/src/main/java/com/example/foodtracker/GoogleSignInHelper.kt
-app/src/main/res/values/strings.xml
 
 # Android Profiling
 *.hprof

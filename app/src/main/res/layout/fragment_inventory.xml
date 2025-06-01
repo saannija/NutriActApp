@@ -9,4 +9,20 @@
         android:id="@+id/inventoryRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/emptyStateTextView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="Your fridge is empty!\n\nTap the + button to add your first item and start tracking your food inventory."
+        android:textSize="18sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textAlignment="center"
+        android:lineSpacingMultiplier="1.2"
+        android:drawableTop="@drawable/ic_default"
+        android:drawablePadding="24dp"
+        android:visibility="gone"
+        android:contentDescription="Empty fridge message" />
+
 </FrameLayout>

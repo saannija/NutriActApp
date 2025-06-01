@@ -32,7 +32,7 @@ class StartActivity : AppCompatActivity() {
         if (auth.currentUser != null) {
             // User is logged in, go to HomeActivity
             startActivity(Intent(this, HomeActivity::class.java))
-            finish() // Close StartActivity so the user can't go back to it
+            finish()
         } else {
             // User is not logged in, show login/register options
             loginBtn.setOnClickListener {

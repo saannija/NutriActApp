@@ -72,13 +72,21 @@ class ProfileFragment : Fragment() {
         }
 
         btnSettings.setOnClickListener {
-            // Navigate to settings or show settings options
-            Toast.makeText(context, "Settings feature coming soon", Toast.LENGTH_SHORT).show()
+            // Navigate to SettingsFragment
+            val settingsFragment = SettingsFragment()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, settingsFragment)
+                .addToBackStack(null)
+                .commit()
         }
 
         btnNotifications.setOnClickListener {
-            // Navigate to notifications settings
-            Toast.makeText(context, "Notifications settings coming soon", Toast.LENGTH_SHORT).show()
+            // Navigate to NotificationsFragment
+            val notificationsFragment = NotificationsFragment()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, notificationsFragment)
+                .addToBackStack(null)
+                .commit()
         }
     }
 

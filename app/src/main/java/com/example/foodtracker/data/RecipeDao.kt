@@ -1,6 +1,7 @@
 package com.example.foodtracker.data
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -16,4 +17,13 @@ interface RecipeDao {
 
     @Query("SELECT COUNT(*) FROM saved_recipes WHERE userId = :userId AND title = :title")
     fun isRecipeSaved(userId: String, title: String): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertIngredientCheckboxState(state: IngredientCheckboxState)
+
+    @Query("SELECT * FROM ingredient_checkbox_states WHERE userId = :userId AND recipeTitle = :recipeTitle")
+    suspend fun getIngredientCheckboxStates(userId: String, recipeTitle: String): List<IngredientCheckboxState>
+
+    @Delete
+    suspend fun deleteIngredientCheckboxState(state: IngredientCheckboxState)
 }

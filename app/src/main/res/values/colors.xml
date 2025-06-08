@@ -5,6 +5,8 @@
     <color name="white">#FFFFFF</color>
     <color name="green">#74F05C</color>
     <color name="dark_green">#123106</color>
+    <color name="notification_read_background">#F5F5F5</color>
+    <color name="notification_unread_background">#FFFFFF</color>
 
     <color name="my_primary_color">@color/green</color>
     <color name="my_primary_variant_color">@color/dark_green</color>

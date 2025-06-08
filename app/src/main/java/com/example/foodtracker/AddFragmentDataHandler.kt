@@ -3,9 +3,12 @@ package com.example.foodtracker
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.foodtracker.databinding.FragmentAddBinding
 import com.example.foodtracker.model.MasterProduct
 import com.example.foodtracker.model.Product
+import com.example.foodtracker.workers.ExpiryCheckWorker
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -39,7 +42,11 @@ class AddFragmentDataHandler(
                 showToast("Product added successfully.")
                 fragment.clearFields() // Notīra formas laukus
                 fragment.showAddOptions() // Atgriežas uz izvēles skatu
+
+                // Paziņojumi
+                triggerImmediateExpiryCheck()
             }
+
             .addOnFailureListener {
                 showToast("Error adding product")
             }
@@ -58,6 +65,9 @@ class AddFragmentDataHandler(
             .addOnSuccessListener {
                 showToast("Product updated successfully.")
                 fragment.parentFragmentManager.popBackStack() // Atgriežas atpakaļ UI skatā
+
+                // Paziņojumi
+                triggerImmediateExpiryCheck()
             }
             .addOnFailureListener {
                 showToast("Error updating product.")
@@ -135,7 +145,23 @@ class AddFragmentDataHandler(
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error soft deleting document $documentId", e)
                 callback(false)
+                triggerImmediateExpiryCheck()
             }
+    }
+
+    // Pārbauda vai nav produkti ar drīzu termiņu, lai var nosūtīt paziņojumu
+    private fun triggerImmediateExpiryCheck() {
+        try {
+            val context = fragment.requireContext()
+            val immediateWorkRequest = OneTimeWorkRequestBuilder<ExpiryCheckWorker>()
+                .build()
+
+            WorkManager.getInstance(context).enqueue(immediateWorkRequest)
+
+            Log.d(TAG, "Immediate expiry check triggered after product operation")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to trigger immediate expiry check", e)
+        }
     }
 
     // Iegūst ievades datus

@@ -10,6 +10,12 @@
 <!--        app:showAsAction="ifRoom"/>-->
 
     <item
+        android:id="@+id/action_test_notifications"
+        android:title="Test Notifications"
+        android:icon="@drawable/icon_notifications"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_profile"
         android:icon="@drawable/icon_user"
         android:title="Profile"

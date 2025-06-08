@@ -57,15 +57,86 @@ class HomeFragment : Fragment() {
 
     private fun setupAdapters() {
         expiringProductsAdapter = ExpiringProductsAdapter { product ->
-            Toast.makeText(context, "Clicked on expiring: ${product.productName}", Toast.LENGTH_SHORT).show()
-            // TODO: Navigate to product detail screen or edit screen
+            // Navigate to AddFragment in edit mode with product data
+            val addFragment = AddFragment().apply {
+                arguments = Bundle().apply {
+                    putString("documentId", product.id)
+                    putString("productName", product.productName)
+                    putString("category", product.category)
+                    putString("type", product.type ?: "")
+                    putInt("quantity", product.quantity)
+                    putString("unit", product.unit)
+                    putInt("totalAmount", product.totalAmount ?: 0)
+                    putString("notes", product.notes ?: "")
+                    putBoolean("allergenAlert", product.allergenAlert ?: false)
+                    putString("storageStatus", product.storageStatus ?: "Unopened")
+
+                    // Convert Timestamp to milliseconds for the date picker
+                    product.expirationDate?.let { timestamp ->
+                        putLong("expirationDate", timestamp.toDate().time)
+                    }
+                }
+            }
+            navigateToFragment(addFragment, "AddFragment")
         }
 
         savedRecipesAdapter = RecipeAdapter(savedRecipesList) { recipe ->
-            Toast.makeText(context, "Clicked on saved recipe: ${recipe.title}", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "Clicked on saved recipe: ${recipe.title}", Toast.LENGTH_SHORT).show()
             val detailFragment = RecipeDetailFragment.newInstance(recipe, true)
             navigateToFragment(detailFragment, "RecipeDetailFragment")
         }
+    }
+
+    private fun loadExpiringProducts(userId: String) {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, 3)
+        val weekFromNow = Timestamp(calendar.time)
+
+        db.collection("products")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("deleted", false)
+            .whereLessThanOrEqualTo("expirationDate", weekFromNow)
+            .orderBy("expirationDate", Query.Direction.ASCENDING)
+            .limit(5)
+            .get()
+            .addOnSuccessListener { documents ->
+                val products = mutableListOf<Product>()
+                for (document in documents) {
+                    val product = Product(
+                        id = document.id,
+                        productName = document.getString("productName") ?: "",
+                        category = document.getString("category") ?: "",
+                        type = document.getString("type") ?: "",
+                        expirationDate = document.getTimestamp("expirationDate"),
+                        quantity = document.getLong("quantity")?.toInt() ?: 0,
+                        unit = document.getString("unit") ?: "",
+                        totalAmount = document.getLong("totalAmount")?.toInt() ?: 0,
+                        notes = document.getString("notes") ?: "",
+                        allergenAlert = document.getBoolean("allergenAlert") ?: false,
+                        storageStatus = document.getString("storageStatus") ?: "Unopened"
+                    )
+                    products.add(product)
+                }
+
+                expiringProductsList.clear()
+                expiringProductsList.addAll(products)
+
+                if (products.isEmpty()) {
+                    binding.noExpiringItemsTextView.visibility = View.VISIBLE
+                    binding.noExpiringItemsTextView.text = "Great! No items expiring soon."
+                    binding.expiringProductsRecyclerView.visibility = View.GONE
+                } else {
+                    binding.noExpiringItemsTextView.visibility = View.GONE
+                    binding.expiringProductsRecyclerView.visibility = View.VISIBLE
+                    expiringProductsAdapter.submitList(products)
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.w("HomeFragment", "Error loading expiring products: ", exception)
+                binding.noExpiringItemsTextView.visibility = View.VISIBLE
+                binding.noExpiringItemsTextView.text = "Unable to load expiring items."
+                binding.expiringProductsRecyclerView.visibility = View.GONE
+            }
     }
 
     private fun setupClickListeners() {
@@ -141,54 +212,6 @@ class HomeFragment : Fragment() {
         loadSavedRecipes(userId)
         loadInventorySummary(userId)
         loadRecommendedRecipe()
-    }
-
-    private fun loadExpiringProducts(userId: String) {
-        // Get products expiring in the next 7 days
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, 7)
-        val weekFromNow = Timestamp(calendar.time)
-
-        db.collection("products")
-            .whereEqualTo("userId", userId)
-            .whereEqualTo("deleted", false)
-            .whereLessThanOrEqualTo("expirationDate", weekFromNow)
-            .orderBy("expirationDate", Query.Direction.ASCENDING)
-            .limit(10) // Limit to first 10 items for home screen
-            .get()
-            .addOnSuccessListener { documents ->
-                val products = mutableListOf<Product>()
-                for (document in documents) {
-                    val product = Product(
-                        id = document.id,
-                        productName = document.getString("productName") ?: "",
-                        category = document.getString("category") ?: "",
-                        expirationDate = document.getTimestamp("expirationDate"),
-                        quantity = document.getLong("quantity")?.toInt() ?: 0,
-                        unit = document.getString("unit") ?: ""
-                    )
-                    products.add(product)
-                }
-
-                expiringProductsList.clear()
-                expiringProductsList.addAll(products)
-
-                if (products.isEmpty()) {
-                    binding.noExpiringItemsTextView.visibility = View.VISIBLE
-                    binding.noExpiringItemsTextView.text = "Great! No items expiring soon."
-                    binding.expiringProductsRecyclerView.visibility = View.GONE
-                } else {
-                    binding.noExpiringItemsTextView.visibility = View.GONE
-                    binding.expiringProductsRecyclerView.visibility = View.VISIBLE
-                    expiringProductsAdapter.submitList(products)
-                }
-            }
-            .addOnFailureListener { exception ->
-                Log.w("HomeFragment", "Error loading expiring products: ", exception)
-                binding.noExpiringItemsTextView.visibility = View.VISIBLE
-                binding.noExpiringItemsTextView.text = "Unable to load expiring items."
-                binding.expiringProductsRecyclerView.visibility = View.GONE
-            }
     }
 
     private fun loadSavedRecipes(userId: String) {
@@ -334,7 +357,7 @@ class HomeFragment : Fragment() {
         }
 
         recipeCardBinding.root.setOnClickListener {
-            Toast.makeText(context, "Clicked on recommended: ${recipe.title}", Toast.LENGTH_SHORT).show()
+            // Toast.makeText(context, "Clicked on recommended: ${recipe.title}", Toast.LENGTH_SHORT).show()
             val detailFragment = RecipeDetailFragment.newInstance(recipe, false)
             navigateToFragment(detailFragment, "RecipeDetailFragment")
         }

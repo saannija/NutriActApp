@@ -18,6 +18,7 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.foodtracker.data.IngredientCheckboxState
 
 class RecipeDetailFragment : Fragment() {
 
@@ -26,6 +27,7 @@ class RecipeDetailFragment : Fragment() {
 
     private lateinit var recipe: Recipe
     private var isFromSaved: Boolean = false
+    private lateinit var ingredientsAdapter: IngredientsAdapter
 
     companion object {
         fun newInstance(recipe: Recipe, fromSaved: Boolean = false): RecipeDetailFragment {
@@ -53,9 +55,7 @@ class RecipeDetailFragment : Fragment() {
             recipe = it.getParcelable("recipe")!!
             isFromSaved = it.getBoolean("fromSaved", false)
             populateRecipeDetails(recipe)
-            binding.ingredientsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-            binding.ingredientsRecyclerView.adapter = IngredientsAdapter(recipe.ingredients)
-
+            setupIngredientsRecyclerView()
         }
 
         if (isFromSaved) {
@@ -87,6 +87,55 @@ class RecipeDetailFragment : Fragment() {
                 Toast.makeText(requireContext(), getString(R.string.recipe_saved), Toast.LENGTH_SHORT).show()
                 binding.saveRecipeButton.text = getString(R.string.recipe_already_saved)
                 binding.saveRecipeButton.isEnabled = false
+            }
+        }
+    }
+
+    private fun setupIngredientsRecyclerView() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        ingredientsAdapter = IngredientsAdapter(
+            recipe.ingredients,
+            userId,
+            recipe.title
+        ) { ingredientName, isChecked ->
+            saveIngredientCheckboxState(userId, ingredientName, isChecked)
+        }
+
+        binding.ingredientsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.ingredientsRecyclerView.adapter = ingredientsAdapter
+
+        // Load saved checkbox states
+        loadIngredientCheckboxStates(userId)
+    }
+
+    private fun loadIngredientCheckboxStates(userId: String) {
+        lifecycleScope.launch {
+            val states = withContext(Dispatchers.IO) {
+                AppDatabase.getDatabase(requireContext())
+                    .recipeDao()
+                    .getIngredientCheckboxStates(userId, recipe.title)
+            }
+
+            val stateMap = states.associate { it.ingredientName to it.isChecked }
+            ingredientsAdapter.setCheckboxStates(stateMap)
+        }
+    }
+
+    private fun saveIngredientCheckboxState(userId: String, ingredientName: String, isChecked: Boolean) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                val dao = AppDatabase.getDatabase(requireContext()).recipeDao()
+                val stateId = "${userId}_${recipe.title}_${ingredientName}"
+
+                val state = IngredientCheckboxState(
+                    id = stateId,
+                    userId = userId,
+                    recipeTitle = recipe.title,
+                    ingredientName = ingredientName,
+                    isChecked = isChecked
+                )
+                dao.insertIngredientCheckboxState(state)
             }
         }
     }

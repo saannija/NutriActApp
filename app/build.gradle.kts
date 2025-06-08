@@ -110,6 +110,9 @@ dependencies {
     implementation(libs.androidx.cardview)
     implementation(libs.guava)
 
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.core.ktx)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

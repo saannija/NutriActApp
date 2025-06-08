@@ -6,6 +6,7 @@ barcodeScanning = "17.2.0"
 cameraCore = "1.4.0"
 cardview = "1.0.0"
 coreKtx = "1.15.0"
+coreKtxVersion = "1.10.1"
 espressoCore = "3.6.1"
 firebaseBom = "33.9.0"
 firebaseAuth = "23.2.0"
@@ -33,9 +34,12 @@ composeBom = "2024.04.01"
 appcompat = "1.7.0"
 googleGmsGoogleServices = "4.4.2"
 lifecycleProcess = "2.8.7"
+workRuntimeKtx = "2.10.1"
 
 [libraries]
 # Firebase
+androidx-core-ktx-v1101 = { module = "androidx.core:core-ktx", version.ref = "coreKtxVersion" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }
 firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx" }

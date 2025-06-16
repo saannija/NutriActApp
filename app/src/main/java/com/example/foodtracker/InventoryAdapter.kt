@@ -61,8 +61,9 @@ class InventoryAdapter(
             cardView.setOnClickListener { onItemClick(item) }
             deleteIconImageView.setOnClickListener { onDeleteClick(item) }
 
-            val expirationStatus = determineExpirationStatus(item.expirationDate, nearingThreshold)
-            updateExpirationAppearance(expirationStatus, item.expirationDate, nearingThreshold)
+            val effectiveExpiration = item.getEffectiveExpirationDate()
+            val expirationStatus = determineExpirationStatus(effectiveExpiration, nearingThreshold)
+            updateExpirationAppearance(expirationStatus, effectiveExpiration, nearingThreshold)
         }
 
         private fun getExpirationContentDescription(timestamp: Timestamp?, nearingThreshold: Int): String {

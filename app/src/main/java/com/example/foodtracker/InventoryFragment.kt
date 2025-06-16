@@ -182,7 +182,7 @@ class InventoryFragment : Fragment() {
         val totalAmount = document.getLong("totalAmount")?.toInt() ?: 0
         val notes = document.getString("notes") ?: ""
         val allergenAlert = document.getBoolean("allergenAlert") ?: false
-
+        val openedDate = document.getTimestamp("openedDate")
 
         return InventoryItem(
             productName,
@@ -197,7 +197,8 @@ class InventoryFragment : Fragment() {
             unit,
             totalAmount,
             notes,
-            allergenAlert
+            allergenAlert,
+            openedDate
         )
     }
 

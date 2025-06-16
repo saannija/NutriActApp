@@ -79,8 +79,19 @@ class AddFragmentDataHandler(
         // Saņem datus no master produkta formas laukiem
         val masterProductName = binding.layoutAddMasterProduct.masterProductNameEditText.text.toString().trim()
         val masterProductBrand = binding.layoutAddMasterProduct.masterProductBrandEditText.text.toString().trim()
-        val masterCategory = binding.layoutAddMasterProduct.masterCategoryAutoCompleteTextView.text.toString().trim()
-        val masterType = binding.layoutAddMasterProduct.masterTypeAutoCompleteTextView.text.toString().trim()
+
+        val masterCategory = if (binding.layoutAddMasterProduct.otherMasterCategoryInputLayout.visibility == View.VISIBLE) {
+            binding.layoutAddMasterProduct.otherMasterCategoryEditText.text.toString().trim()
+        } else {
+            binding.layoutAddMasterProduct.masterCategoryAutoCompleteTextView.text.toString().trim()
+        }
+
+        val masterType = if (binding.layoutAddMasterProduct.otherMasterTypeInputLayout.visibility == View.VISIBLE) {
+            binding.layoutAddMasterProduct.otherMasterTypeEditText.text.toString().trim()
+        } else {
+            binding.layoutAddMasterProduct.masterTypeAutoCompleteTextView.text.toString().trim()
+        }
+
         val masterQuantityString = binding.layoutAddMasterProduct.masterQuantityEditText.text.toString().trim()
         val masterQuantity = masterQuantityString.toIntOrNull()
         val masterUnit = if (binding.layoutAddMasterProduct.otherMasterUnitInputLayout.visibility == View.VISIBLE) {
@@ -257,12 +268,26 @@ class AddFragmentDataHandler(
 
         val calendar = Calendar.getInstance()
         calendar.set(year, month, day, 0, 0, 0)
+
+        // If fresh produce checkbox is checked, add extra days
+        if (binding.layoutAddManually.freshProduceCheckBox.isChecked) {
+            calendar.add(Calendar.DAY_OF_MONTH, 5)
+        }
+
         return Timestamp(calendar.time)
     }
 
     // Atgriež vai produkts ir atvērts vai nē
     private fun getStorageStatus(): String {
         return if (binding.layoutAddManually.unopenedChip.isChecked) "Unopened" else "Opened"
+    }
+
+    private fun getOpenedDate(): Timestamp? {
+        return if (binding.layoutAddManually.unopenedChip.isChecked) {
+            null
+        } else {
+            Timestamp.now()
+        }
     }
 
     // Īss Toast paziņojums

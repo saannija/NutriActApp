@@ -341,6 +341,7 @@ class AddFragment : Fragment() {
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         )
+        binding.layoutAddManually.freshProduceCheckBox.isChecked = false
         binding.layoutAddManually.unopenedChip.isChecked = true
         binding.layoutAddManually.quantityEditText.setText("1")
         binding.layoutAddManually.unitAutoCompleteTextView.text.clear()
@@ -361,6 +362,11 @@ class AddFragment : Fragment() {
         binding.layoutAddMasterProduct.masterProductBrandEditText.text?.clear()
         binding.layoutAddMasterProduct.masterCategoryAutoCompleteTextView.text.clear()
         binding.layoutAddMasterProduct.masterTypeAutoCompleteTextView.text.clear()
+
+        binding.layoutAddMasterProduct.otherMasterCategoryEditText.text?.clear()
+        binding.layoutAddMasterProduct.otherMasterCategoryInputLayout.visibility = View.GONE
+        binding.layoutAddMasterProduct.otherMasterTypeEditText.text?.clear()
+        binding.layoutAddMasterProduct.otherMasterTypeInputLayout.visibility = View.GONE
 
         binding.layoutAddMasterProduct.masterQuantityEditText.setText("1")
         binding.layoutAddMasterProduct.masterUnitAutoCompleteTextView.text.clear()

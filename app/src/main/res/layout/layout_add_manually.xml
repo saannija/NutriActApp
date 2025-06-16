@@ -123,6 +123,13 @@
             android:calendarViewShown="false"
             android:datePickerMode="spinner" />
 
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/freshProduceCheckBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Fresh produce (add 5 extra days)" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

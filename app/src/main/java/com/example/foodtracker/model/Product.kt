@@ -14,6 +14,7 @@ data class Product(
     val storageStatus: String = "Unopened",
     val addedDate: Timestamp = Timestamp.now(),
     val updatedDate: Timestamp = Timestamp.now(),
+    val openedDate: Timestamp? = null,
     val quantity: Int = 0,
     val unit: String = "",
     val totalAmount: Int = 0,

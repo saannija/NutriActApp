@@ -27,10 +27,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var registerBtn: TextView
     private lateinit var googleSignInButton: ImageView
     private lateinit var imageView: ImageView
+    private lateinit var forgotPasswordBtn: TextView
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
 
     private lateinit var googleSignInHelper: GoogleSignInHelper
+
+    private var lastPasswordResetTime = 0L
+    private val PASSWORD_RESET_COOLDOWN = 15 * 60 * 1000L
 
     private val TAG = "MainActivity"
 
@@ -61,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         registerBtn = findViewById(R.id.register_btn)
         googleSignInButton = findViewById(R.id.google_btn)
         imageView = findViewById(R.id.logoIcon)
+        forgotPasswordBtn = findViewById(R.id.forgot_password_btn)
 
         val whiteColor = ContextCompat.getColor(this, R.color.white)
         imageView.setColorFilter(whiteColor, PorterDuff.Mode.SRC_IN)
@@ -112,6 +117,10 @@ class MainActivity : AppCompatActivity() {
             disableLoginButtons()
             googleSignInHelper.startSignIn()
         }
+
+        forgotPasswordBtn.setOnClickListener {
+            handleForgotPassword()
+        }
     }
 
     private fun performLogin() {
@@ -138,7 +147,7 @@ class MainActivity : AppCompatActivity() {
             // It's an email, sign in directly
             signInWithEmail(emailOrUsername, password)
         } else {
-            // It's a username, need to find the associated email first
+            // It's a username, find the associated email first
             findEmailByUsername(emailOrUsername.lowercase(), password)
         }
     }
@@ -197,6 +206,74 @@ class MainActivity : AppCompatActivity() {
                 enableLoginButtons()
                 Log.e(TAG, "Error finding user by username", exception)
                 Toast.makeText(this, "Connection error. Please try again.", Toast.LENGTH_LONG).show()
+            }
+    }
+
+    private fun handleForgotPassword() {
+        // Check cooldown
+        val currentTime = System.currentTimeMillis()
+        val timeRemaining = PASSWORD_RESET_COOLDOWN - (currentTime - lastPasswordResetTime)
+
+        if (timeRemaining > 0) {
+            val minutesLeft = (timeRemaining / 60000).toInt() + 1
+            Toast.makeText(this, "Please wait $minutesLeft more minutes before requesting another reset", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val emailOrUsername = emailUsernameInput.text.toString().trim()
+
+        if (emailOrUsername.isEmpty()) {
+            emailUsernameInput.error = "Please enter your email or username"
+            emailUsernameInput.requestFocus()
+            return
+        }
+
+        disableLoginButtons()
+
+        // Check if input is email or username
+        if (Patterns.EMAIL_ADDRESS.matcher(emailOrUsername).matches()) {
+            sendPasswordReset(emailOrUsername)
+        } else {
+            // Find email by username first
+            db.collection("users")
+                .whereEqualTo("username", emailOrUsername.lowercase())
+                .get()
+                .addOnSuccessListener { documents ->
+                    if (!documents.isEmpty) {
+                        val email = documents.documents[0].getString("email")
+                        if (email != null) {
+                            sendPasswordReset(email)
+                        } else {
+                            enableLoginButtons()
+                            Toast.makeText(this, "Account error. Please contact support.", Toast.LENGTH_LONG).show()
+                        }
+                    } else {
+                        enableLoginButtons()
+                        Toast.makeText(this, "Username not found.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .addOnFailureListener {
+                    enableLoginButtons()
+                    Toast.makeText(this, "Connection error. Please try again.", Toast.LENGTH_LONG).show()
+                }
+        }
+    }
+
+    private fun sendPasswordReset(email: String) {
+        auth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                enableLoginButtons()
+                if (task.isSuccessful) {
+                    lastPasswordResetTime = System.currentTimeMillis() // Set cooldown timer
+                    Toast.makeText(this, "Password reset email sent to $email", Toast.LENGTH_LONG).show()
+                } else {
+                    val errorMessage = when {
+                        task.exception?.message?.contains("There is no user record") == true ->
+                            "No account found with this email."
+                        else -> "Failed to send reset email. Please try again."
+                    }
+                    Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+                }
             }
     }
 

@@ -106,6 +106,16 @@ class AddFragmentUiSetup(
             categories
         )
         binding.layoutAddMasterProduct.masterCategoryAutoCompleteTextView.setAdapter(adapter)
+
+        binding.layoutAddMasterProduct.masterCategoryAutoCompleteTextView.setOnItemClickListener { parent, _, position, _ ->
+            val selectedCategory = parent.getItemAtPosition(position).toString()
+            if (selectedCategory.equals("Other", ignoreCase = true)) {
+                binding.layoutAddMasterProduct.otherMasterCategoryInputLayout.visibility = View.VISIBLE
+            } else {
+                binding.layoutAddMasterProduct.otherMasterCategoryInputLayout.visibility = View.GONE
+                binding.layoutAddMasterProduct.otherMasterCategoryEditText.text?.clear()
+            }
+        }
     }
 
     private fun setupMasterTypeAutoCompleteTextView() {
@@ -116,6 +126,16 @@ class AddFragmentUiSetup(
             types
         )
         binding.layoutAddMasterProduct.masterTypeAutoCompleteTextView.setAdapter(adapter)
+
+        binding.layoutAddMasterProduct.masterTypeAutoCompleteTextView.setOnItemClickListener { parent, _, position, _ ->
+            val selectedType = parent.getItemAtPosition(position).toString()
+            if (selectedType.equals("Other", ignoreCase = true)) {
+                binding.layoutAddMasterProduct.otherMasterTypeInputLayout.visibility = View.VISIBLE
+            } else {
+                binding.layoutAddMasterProduct.otherMasterTypeInputLayout.visibility = View.GONE
+                binding.layoutAddMasterProduct.otherMasterTypeEditText.text?.clear()
+            }
+        }
     }
 
     private fun setupMasterUnitAutoCompleteTextView() {

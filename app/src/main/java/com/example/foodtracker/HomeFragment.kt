@@ -125,10 +125,13 @@ class HomeFragment : Fragment() {
                     binding.noExpiringItemsTextView.visibility = View.VISIBLE
                     binding.noExpiringItemsTextView.text = "Great! No items expiring soon."
                     binding.expiringProductsRecyclerView.visibility = View.GONE
+                    binding.storageTipCard.visibility = View.GONE
                 } else {
                     binding.noExpiringItemsTextView.visibility = View.GONE
                     binding.expiringProductsRecyclerView.visibility = View.VISIBLE
                     expiringProductsAdapter.submitList(products)
+
+                    showStorageTipForProducts(products)
                 }
             }
             .addOnFailureListener { exception ->
@@ -383,6 +386,84 @@ class HomeFragment : Fragment() {
 
         // Hide recommended recipe
         binding.recommendedRecipeCardContainer.visibility = View.GONE
+    }
+
+    private fun getStorageTipForCategory(category: String): String {
+        return when (category.lowercase()) {
+            "fruits", "fruit" -> listOf(
+                "Store most fruits at room temperature, then refrigerate when ripe. Keep bananas separate!",
+                "Bananas release ethylene gas that makes other fruits ripen faster - store them separately",
+                "Apples can last weeks in the fridge but taste better at room temperature",
+                "Berries should be stored unwashed in the fridge and only rinsed before eating"
+            ).random()
+            "vegetables", "vegetable" -> listOf(
+                "Most vegetables stay fresh longer in the refrigerator's crisper drawer with proper humidity",
+                "Wrap lettuce and leafy greens in paper towels to absorb excess moisture",
+                "Store potatoes in a cool, dark place - never in the fridge as it makes them sweet",
+                "Keep onions and garlic in a dry, ventilated area away from potatoes"
+            ).random()
+            "dairy" -> listOf(
+                "Keep dairy products in the coldest part of your fridge, not the door where temperature fluctuates",
+                "Milk stays fresh longer when stored in the main body of the fridge, not the door",
+                "Hard cheeses can be wrapped in wax paper, then plastic wrap to prevent drying out"
+            ).random()
+            "meat", "protein", "poultry", "fish" -> listOf(
+                "Store meat on the bottom shelf to prevent drips. Use within 1-2 days or freeze",
+                "Fresh fish should be used within 24 hours or frozen immediately",
+                "Ground meat spoils faster than whole cuts - use it first or freeze"
+            ).random()
+            "bread", "bakery" -> listOf(
+                "Keep bread in a cool, dry place or freeze for longer storage. Avoid refrigerating bread",
+                "Bread goes stale faster in the fridge - freeze it instead for longer storage",
+                "Store bread in its original bag or airtight container to maintain freshness"
+            ).random()
+            "pantry", "dry goods", "grains", "pasta" -> listOf(
+                "Store in airtight containers in a cool, dry place away from direct sunlight",
+                "Glass jars or sealed plastic containers keep pantry items fresh and pest-free",
+                "Rice and pasta can last years when stored properly in airtight containers"
+            ).random()
+            else -> listOf(
+                "Check storage instructions on packaging for best results. When in doubt, keep it cool and dry!",
+                "First in, first out - use older items before newer ones to reduce waste",
+                "Most foods last longer when stored in consistent, cool temperatures",
+                "Keep your fridge at 37°F (3°C) and freezer at 0°F (-18°C) for optimal food safety"
+            ).random()
+        }
+    }
+
+    // Store current products for tip rotation
+    private var currentExpiringProducts = listOf<Product>()
+
+    private fun showStorageTipForProducts(products: List<Product>) {
+        if (products.isEmpty()) {
+            binding.storageTipCard.visibility = View.GONE
+            return
+        }
+
+        currentExpiringProducts = products
+
+        // Show initial tip
+        showRandomTipForProducts(products)
+        binding.storageTipCard.visibility = View.VISIBLE
+
+        // Set click listener for tip rotation
+        binding.storageTipCard.setOnClickListener {
+            showRandomTipForProducts(currentExpiringProducts)
+        }
+    }
+
+    private fun showRandomTipForProducts(products: List<Product>) {
+        // Get all unique categories from expiring products
+        val categories = products.map { it.category.lowercase() }.distinct()
+
+        val tip = if (categories.isNotEmpty()) {
+            val randomCategory = categories.random()
+            getStorageTipForCategory(randomCategory)
+        } else {
+            getStorageTipForCategory("general")
+        }
+
+        binding.storageTipTextView.text = tip
     }
 
     override fun onResume() {
